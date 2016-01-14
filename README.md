@@ -69,20 +69,20 @@ See [wikipedia](https://en.wikipedia.org/wiki/Cons) for more details.
 
 #### Computation
 
-##### `+`, `-`, `/`, `*`, '='
+##### `+`, `-`, `/`, `*`, `=`
 
 Mathematical operators and (type-safe!) equality operator.
 
 #### Future (Roadmap)
 
-##### `import (filename)`
+##### `import filename`
 
 `import` imports the specified file as a module, into the current scope.
 
-##### `sequence (expressions)`
+##### `sequence expr1 expr2 expr3 etc.`
 
 `sequence` runs multiple expressions in sequence. Returns a list of the results of the expressions.
 
-##### `parallel (expressions)`
+##### `parallel expr1 expr2 expr3 etc.`
 
 `parallel` runs multiple expressions in parallel (returning when the last-running expression returns).
