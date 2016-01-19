@@ -36,9 +36,11 @@ void ASTNode::toString(std::stringstream& ss) const {
   }
   ss << NodeKindName(m_kind);
   ss << std::endl;
+  indentLevel++;
   for (const auto& child : m_children) {
     child.toString(ss);
   }
+  indentLevel--;
 }
 
 std::string ASTNode::toString() const {
@@ -78,8 +80,10 @@ ASTNode ASTNode::parseExpression(ASTInput& input) {
     expect(kind, input, "(");
     parseOptionalWhitespace(input);
     ret.m_children.push_back(parseIdentifier(input));
+    parseWhitespace(input);
     ret.m_children.push_back(parseOptionalParameterList(input));
     parseOptionalWhitespace(input);
+    expect(kind, input, ")");
   } else {
     ret.m_children.push_back(parseLiteral(input));
   }
@@ -114,12 +118,12 @@ ASTNode ASTNode::parseNumber(ASTInput& input) {
       ss << next;
       isFloat = true;
     } else {
-      if (isWhitespace(next)) {
+      if (isWhitespace(next) || next == ')') {
         // number is done
         break;
       }
       if (std::strchr("0123456789", next) == nullptr) {
-        throw ParseError(kind, "digits 0 through 9", std::string(next, 1));
+        throw ParseError(kind, "digits 0 through 9", next);
       }
       ss << next;
     }
@@ -168,7 +172,7 @@ ASTNode ASTNode::parseIdentifier(ASTInput& input) {
     if (next == '(' ||
         next == ')' ||
         next == '\'') {
-      throw ParseError(kind, "non-whitespace characters other than (, ), and '", std::string(next, 1));
+      throw ParseError(kind, "non-whitespace characters other than (, ), and '", next);
     }
     ss << next;
     input.next();
@@ -186,10 +190,15 @@ void ASTNode::parseOptionalWhitespace(ASTInput& input) {
 }
 
 void ASTNode::parseWhitespace(ASTInput& input) {
+  bool foundWhitespace = false;
   while (input.size() != 0) {
     char next = input.peek();
-    if (!isWhitespace(next)) {
-      throw ParseError(NodeKind::whitespace, "Any of: ' ', \\r, \\n, \\t", std::string(next, 1));
+    if (isWhitespace(next)) {
+      foundWhitespace = true;
+    } else if (!foundWhitespace) {
+      throw ParseError(NodeKind::whitespace, "Any of: ' ', \\r, \\n, \\t", next);
+    } else {
+      break;
     }
     input.next();
   }

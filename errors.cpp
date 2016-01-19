@@ -5,7 +5,10 @@
 
 using namespace simplex;
 
-ParseError::ParseError(NodeKind kind, const std::string& expected, const std::string& actual) {
+void ParseError::init(
+    NodeKind kind,
+    const std::string& expected,
+    const std::string& actual) {
   std::stringstream ss;
   ss << "Parse error while attempting to parse ";
   ss << NodeKindName(kind);
@@ -14,6 +17,14 @@ ParseError::ParseError(NodeKind kind, const std::string& expected, const std::st
   ss << "Found:" << std::endl << '\t';
   ss << actual << std::endl;
   m_message = ss.str();
+}
+
+ParseError::ParseError(NodeKind kind, const std::string& expected, const std::string& actual) {
+  this->init(kind, expected, actual);
+}
+
+ParseError::ParseError(NodeKind kind, const std::string& expected, char actual) {
+  this->init(kind, expected, std::string(&actual, 1));
 }
 
 const char* ParseError::what() const noexcept {
