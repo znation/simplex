@@ -2,7 +2,7 @@
 #include "errors.h"
 
 #include <cassert>
-#include <cstring>
+#include <cctype>
 #include <iostream>
 #include <sstream>
 
@@ -73,16 +73,17 @@ ASTNode ASTNode::parseExpression(ASTInput& input) {
   if (input.size() == 0) {
     throw ParseError(kind, "(", "EOF");
   }
-  if (input.peek() == '(') {
+  char next = input.peek();
+  if (next == '(') {
     expect(kind, input, "(");
-    parseOptionalWhitespace(input);
-    ret.m_children.push_back(parseIdentifier(input));
-    parseWhitespace(input);
+    ret.m_children.push_back(parseExpression(input));
     ret.m_children.push_back(parseOptionalParameterList(input));
     parseOptionalWhitespace(input);
     expect(kind, input, ")");
-  } else {
+  } else if (next == '\'' || std::isdigit(next)) {
     ret.m_children.push_back(parseLiteral(input));
+  } else {
+    ret.m_children.push_back(parseIdentifier(input));
   }
   parseOptionalWhitespace(input);
   return ret;
@@ -112,7 +113,7 @@ ASTNode ASTNode::parseNumber(ASTInput& input) {
   size_t inputLen = input.size();
   for (size_t i=0; i<inputLen; i++) {
     char next = input.peek();
-    if (next == '.') {
+    if (i > 0 && next == '.') {
       ss << next;
       isFloat = true;
     } else {
@@ -120,7 +121,7 @@ ASTNode ASTNode::parseNumber(ASTInput& input) {
         // number is done
         break;
       }
-      if (std::strchr("0123456789", next) == nullptr) {
+      if (!std::isdigit(next)) {
         throw ParseError(kind, "digits 0 through 9", next);
       }
       ss << next;

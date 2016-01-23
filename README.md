@@ -8,7 +8,7 @@ In BNF notation:
 ```
 <program> ::= <expression> <program> | <expression>
 
-<expression> ::= <optional-whitespace> "(" <optional-whitespace> <identifier> <whitespace> <optional-parameter-list> <optional-whitespace> ")" <optional-whitespace> | <optional-whitespace> <literal> <optional-whitespace>
+<expression> ::= <optional-whitespace> "(" <optional-whitespace> <expression> <whitespace> <optional-parameter-list> <optional-whitespace> ")" <optional-whitespace> | <optional-whitespace> <literal> <optional-whitespace> | <optional-whitespace> <identifier> <optional-whitespace>
 
 <optional-parameter-list> ::= <parameter-list> | ""
 
