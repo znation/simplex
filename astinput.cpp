@@ -2,7 +2,27 @@
 
 #include <cassert>
 
+#ifdef DEBUG
+#include <iostream>
+#endif
+
 using namespace simplex;
+
+ASTInput::ASTInput(const char *stream, size_t len) :
+#ifdef DEBUG
+  stream(stream), len(len), originalStream(stream), originalLen(len) {
+  std::cout << "DEBUG: input stream at "
+            << std::hex
+            << "0x"
+            << reinterpret_cast<size_t>(this->originalStream)
+            << ", size "
+            << std::dec
+            << this->originalLen
+            << std::endl;
+}
+#else
+  stream(stream), len(len) { }
+#endif
 
 const char *ASTInput::get() {
   return stream;

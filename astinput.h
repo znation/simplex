@@ -5,6 +5,10 @@ namespace simplex {
     private:
       const char *stream;
       size_t len;
+#ifdef DEBUG
+      const char *originalStream;
+      size_t originalLen;
+#endif
 
     public:
       ASTInput(const char *stream, size_t len);

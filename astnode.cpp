@@ -23,9 +23,6 @@ static void expect(NodeKind kind, ASTInput& input, const std::string& token) {
   input.advance(tokenSize);
 }
 
-ASTInput::ASTInput(const char *stream, size_t len) :
-  stream(stream), len(len) { }
-
 ASTNode::ASTNode(NodeKind kind) : m_kind(kind) { }
 
 void ASTNode::toString(std::stringstream& ss) const {
@@ -63,7 +60,6 @@ ASTNode ASTNode::parseProgram(const char *inputStream, size_t len) {
 ASTNode ASTNode::parseProgram(ASTInput& input) {
   auto ret = ASTNode(NodeKind::program);
   ret.m_children.push_back(parseExpression(input));
-  parseOptionalWhitespace(input);
   if (input.size() > 0) {
     ret.m_children.push_back(parseProgram(input));
   }
@@ -73,6 +69,7 @@ ASTNode ASTNode::parseProgram(ASTInput& input) {
 ASTNode ASTNode::parseExpression(ASTInput& input) {
   NodeKind kind = NodeKind::expression;
   ASTNode ret(kind);
+  parseOptionalWhitespace(input);
   if (input.size() == 0) {
     throw ParseError(kind, "(", "EOF");
   }
@@ -87,6 +84,7 @@ ASTNode ASTNode::parseExpression(ASTInput& input) {
   } else {
     ret.m_children.push_back(parseLiteral(input));
   }
+  parseOptionalWhitespace(input);
   return ret;
 }
 
@@ -183,6 +181,9 @@ ASTNode ASTNode::parseIdentifier(ASTInput& input) {
 }
 
 void ASTNode::parseOptionalWhitespace(ASTInput& input) {
+  if (input.size() == 0) {
+    return;
+  }
   if (!isWhitespace(input.peek())) {
     return;
   }
@@ -226,3 +227,22 @@ void ASTNode::parseParameterList(ASTInput& input) {
   parseParameterList(input);
 }
 
+bool ASTNode::operator==(const ASTNode& other) const {
+  if (m_kind != other.m_kind) {
+    return false;
+  }
+  switch (m_kind) {
+    case NodeKind::integer:
+      return m_int == other.m_int;
+    case NodeKind::floatingPoint:
+      return m_float == other.m_float;
+    case NodeKind::identifier:
+    case NodeKind::string:
+      return m_string == other.m_string;
+    default:
+      if (m_children != other.m_children) {
+        return false;
+      }
+  }
+  return true;
+}

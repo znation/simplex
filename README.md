@@ -6,9 +6,9 @@ A simple language &amp; interpreter. Might be a Lisp.
 In BNF notation:
 
 ```
-<program> ::= <expression> <optional-whitespace> <program> | <expression>
+<program> ::= <expression> <program> | <expression>
 
-<expression> ::= "(" <optional-whitespace> <identifier> <whitespace> <optional-parameter-list> <optional-whitespace> ")" | <literal>
+<expression> ::= <optional-whitespace> "(" <optional-whitespace> <identifier> <whitespace> <optional-parameter-list> <optional-whitespace> ")" <optional-whitespace> | <optional-whitespace> <literal> <optional-whitespace>
 
 <optional-parameter-list> ::= <parameter-list> | ""
 

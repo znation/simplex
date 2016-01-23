@@ -33,6 +33,7 @@ namespace simplex {
       std::string toString() const;
       void toString(std::stringstream& ss) const;
       static ASTNode parseProgram(const char *, size_t);
+      bool operator==(const ASTNode& other) const;
   };
 };
 
