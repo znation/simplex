@@ -13,7 +13,8 @@ namespace simplex {
     floatingPoint,
     identifier,
     string,
-    whitespace
+    whitespace,
+    invalid
   };
 
   const char* NodeKindName(NodeKind kind);

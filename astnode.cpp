@@ -247,3 +247,9 @@ bool ASTNode::operator==(const ASTNode& other) const {
   }
   return true;
 }
+
+NodeKind ASTNode::kind() const {
+  return m_kind;
+}
+
+ASTNode::ASTNode() : m_kind(NodeKind::invalid) { }

@@ -3,6 +3,7 @@
 CXXFLAGS=\
 	  -DDEBUG \
 		-g \
+		-O0 \
 		--std=c++14 \
 		-Wall \
 		-Werror \
@@ -17,7 +18,7 @@ simplex: simplex.cpp \
 	parser.o \
 
 test: test/test
-	./test/test
+	./test/test -d yes
 
 test/catch.h:
 	curl -o $@ https://raw.githubusercontent.com/philsquared/Catch/v1.3.3/single_include/catch.hpp
@@ -25,6 +26,7 @@ test/catch.h:
 test/test.cpp: test/catch.h
 
 test/test: test/test.cpp \
+	test/astnode.o \
 	test/parser.o \
 	astinput.o \
 	astnode.o \

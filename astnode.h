@@ -7,7 +7,6 @@
 namespace simplex {
   class ASTNode {
     private:
-
       ASTNode(NodeKind kind);
       NodeKind m_kind;
       union {
@@ -18,6 +17,10 @@ namespace simplex {
       // see http://cpp11standard.blogspot.com/2012/11/c11-standard-explained-1-unrestricted.html
       std::string m_string;
       std::vector<ASTNode> m_children;
+
+#ifdef UNIT_TESTING
+    public:
+#endif
       static ASTNode parseProgram(ASTInput& input);
       static ASTNode parseExpression(ASTInput& input);
       static ASTNode parseOptionalParameterList(ASTInput& input);
@@ -30,7 +33,9 @@ namespace simplex {
       static ASTNode parseString(ASTInput& input);
 
     public:
+      ASTNode(); // produces invalid node! should only use for testing
       std::string toString() const;
+      NodeKind kind() const;
       void toString(std::stringstream& ss) const;
       static ASTNode parseProgram(const char *, size_t);
       bool operator==(const ASTNode& other) const;

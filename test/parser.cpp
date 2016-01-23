@@ -4,5 +4,5 @@
 using namespace simplex::Parser;
 
 TEST_CASE("parser") {
-  REQUIRE(parse("(+ 3 4)") == parse(" ( +  3  4 ) "));
+  CHECK(parse("(+ 3 4)") == parse(" ( +  3  4 ) "));
 }

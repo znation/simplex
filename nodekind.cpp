@@ -13,6 +13,7 @@ const char* simplex::NodeKindName(simplex::NodeKind kind) {
     case NodeKind::identifier: return "identifier";
     case NodeKind::string: return "string";
     case NodeKind::whitespace: return "whitespace";
+    case NodeKind::invalid: return "invalid";
   }
 
 }
