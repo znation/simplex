@@ -30,11 +30,33 @@ TEST_CASE("ASTNode") {
       "💩"
   };
 
+  std::vector<std::string> strings = {
+      "'foo bar'",
+      "'&\"\\'+~💩$'"
+  };
+
+  std::vector<std::string> integers = {
+      "0",
+      "1",
+      "928453821"
+  };
+
+  std::vector<std::string> floats = {
+      "0.23592",
+      "29384."
+  };
+
+  std::vector<std::string> literals;
+  append(literals, strings);
+  append(literals, integers);
+  append(literals, floats);
+
   std::vector<std::string> expressions = {
     "( + 3 4)",
     " (  +  3  4  ) "
   };
   append(expressions, whitespaceVariations(identifiers));
+  append(expressions, whitespaceVariations(literals));
 
   std::vector<std::string> programs = expressions;
   for (size_t i=0; i<expressions.size() - 1; i++) {
@@ -49,10 +71,56 @@ TEST_CASE("ASTNode") {
       CHECK_NOTHROW(result = ASTNode::parseProgram(input));
       CHECK(result.kind() == NodeKind::program);
     }
-    /*
-    CHECK_NOTHROW(ASTNode::parseProgram(input("128.45")));
-    CHECK_NOTHROW(ASTNode::parseProgram(input("'foo bar'")));
-    CHECK_NOTHROW(ASTNode::parseProgram(input("identifier")));
-    */
+  }
+
+  SECTION("parseExpression") {
+    for (const auto& str : expressions) {
+      ASTInput input(str.c_str(), str.size());
+      ASTNode result;
+      CHECK_NOTHROW(result = ASTNode::parseExpression(input));
+      CHECK(result.kind() == NodeKind::expression);
+    }
+  }
+
+  SECTION("parseIdentifier") {
+    for (const auto& str : identifiers) {
+      ASTInput input(str.c_str(), str.size());
+      ASTNode result;
+      CHECK_NOTHROW(result = ASTNode::parseIdentifier(input));
+      CHECK(result.kind() == NodeKind::identifier);
+    }
+  }
+
+  SECTION("parseLiteral") {
+    for (const auto& str : literals) {
+      ASTInput input(str.c_str(), str.size());
+      ASTNode result;
+      CHECK_NOTHROW(result = ASTNode::parseLiteral(input));
+      CHECK(result.kind() == NodeKind::literal);
+    }
+  }
+
+  SECTION("parseString") {
+    for (const auto& str : strings) {
+      ASTInput input(str.c_str(), str.size());
+      ASTNode result;
+      CHECK_NOTHROW(result = ASTNode::parseString(input));
+      CHECK(result.kind() == NodeKind::string);
+    }
+  }
+
+  SECTION("parseNumber") {
+    for (const auto& str : floats) {
+      ASTInput input(str.c_str(), str.size());
+      ASTNode result;
+      CHECK_NOTHROW(result = ASTNode::parseNumber(input));
+      CHECK(result.kind() == NodeKind::floatingPoint);
+    }
+    for (const auto& str : integers) {
+      ASTInput input(str.c_str(), str.size());
+      ASTNode result;
+      CHECK_NOTHROW(result = ASTNode::parseNumber(input));
+      CHECK(result.kind() == NodeKind::integer);
+    }
   }
 }

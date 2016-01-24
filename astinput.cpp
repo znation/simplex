@@ -19,6 +19,12 @@ ASTInput::ASTInput(const char *stream, size_t len) :
             << std::dec
             << this->originalLen
             << std::endl;
+  if (this->originalLen <= 80) {
+    std::cout << '"'
+              << this->originalStream
+              << '"'
+              << std::endl;
+  }
 }
 #else
   stream(stream), len(len) { }

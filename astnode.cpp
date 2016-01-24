@@ -148,11 +148,32 @@ ASTNode ASTNode::parseNumber(ASTInput& input) {
 ASTNode ASTNode::parseString(ASTInput& input) {
   NodeKind kind = NodeKind::string;
   ASTNode ret(kind);
-  expect(kind, input, "\"");
+  std::stringstream ss;
+  bool foundEndOfString = false;
+  expect(kind, input, "'");
+  while (input.size() != 0) {
+    char next = input.peek();
+    if (next == '\'') {
+      foundEndOfString = true;
+      break;
+    }
+    if (next == '\\') {
+      // escape char
+      if (input.size() < 2) {
+        throw ParseError(kind, "any character followed by escape sequence (\\)", "EOF");
+      }
+      ss << input.next();
+      next = input.peek();
+    }
 
-  // TODO parse string here
+    ss << next;
+    input.next();
+  }
+  if (!foundEndOfString) {
+    throw ParseError(kind, "end of string marker (')", "EOF");
+  }
 
-  expect(kind, input, "\"");
+  expect(kind, input, "'");
   return ret;
 }
 
@@ -171,7 +192,7 @@ ASTNode ASTNode::parseIdentifier(ASTInput& input) {
     if (next == '(' ||
         next == ')' ||
         next == '\'') {
-      throw ParseError(kind, "non-whitespace characters other than (, ), and '", next);
+      throw ParseError(kind, "non-whitespace characters other than '(', ')', and '\\''", next);
     }
     ss << next;
     input.next();
