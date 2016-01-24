@@ -21,9 +21,41 @@ bool Structure::operator==(int64_t i) {
   return m_int == i;
 }
 
+bool Structure::operator==(double d) {
+  if (m_kind != StructureKind::floatingPoint) {
+    return false;
+  }
+  return m_float == d;
+}
+
+bool Structure::operator==(int i) {
+  return (*this) == static_cast<int64_t>(i);
+}
+
+// operators
 Structure Structure::operator()(std::vector<Structure> params) {
   assert(m_kind == StructureKind::function);
   return m_function(params);
+}
+std::ostream& Structure::operator<<(std::ostream& os) const {
+  switch (m_kind) {
+    case StructureKind::cons:
+      throw "not implemented";
+    case StructureKind::floatingPoint:
+      os << m_float;
+      break;
+    case StructureKind::function:
+      throw "not implemented";
+    case StructureKind::integer:
+      os << m_int;
+      break;
+    case StructureKind::invalid:
+      throw "not implemented";
+    case StructureKind::string:
+      os << m_string;
+      break;
+  }
+  return os;
 }
 
 double Structure::floatingPoint() const {

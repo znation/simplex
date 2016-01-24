@@ -1,6 +1,6 @@
 #include "evaluator.h"
 #include "parser.h"
-#include "stdlib/stdlib.h"
+#include "stdlib.h"
 
 #include <cassert>
 #include <sstream>
