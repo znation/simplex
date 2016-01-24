@@ -1,3 +1,6 @@
+#ifndef _ASTINPUT_H
+#define _ASTINPUT_H
+
 #include <string>
 
 namespace simplex {
@@ -20,3 +23,5 @@ namespace simplex {
       size_t size() const;
   };
 };
+
+#endif

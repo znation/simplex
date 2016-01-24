@@ -273,4 +273,24 @@ NodeKind ASTNode::kind() const {
   return m_kind;
 }
 
+const std::vector<ASTNode> ASTNode::children() const {
+  return m_children;
+}
+
+double ASTNode::floatingPoint() const {
+  assert(m_kind == NodeKind::floatingPoint);
+  return m_float;
+}
+
+int64_t ASTNode::integer() const {
+  assert(m_kind == NodeKind::integer);
+  return m_int;
+}
+
+const std::string& ASTNode::string() const {
+  assert(m_kind == NodeKind::string ||
+         m_kind == NodeKind::identifier);
+  return m_string;
+}
+
 ASTNode::ASTNode() : m_kind(NodeKind::invalid) { }

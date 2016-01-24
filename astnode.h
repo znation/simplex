@@ -1,3 +1,6 @@
+#ifndef _ASTNODE_H
+#define _ASTNODE_H
+
 #include "astinput.h"
 #include "nodekind.h"
 
@@ -36,6 +39,10 @@ namespace simplex {
       ASTNode(); // produces invalid node! should only use for testing
       std::string toString() const;
       NodeKind kind() const;
+      const std::vector<ASTNode> children() const;
+      int64_t integer() const;
+      double floatingPoint() const;
+      const std::string& string() const;
       void toString(std::stringstream& ss) const;
       static ASTNode parseProgram(const char *, size_t);
       bool operator==(const ASTNode& other) const;
@@ -43,3 +50,5 @@ namespace simplex {
 };
 
 std::ostream& operator<<(std::ostream&, const simplex::ASTNode&);
+
+#endif

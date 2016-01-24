@@ -14,8 +14,11 @@ simplex: simplex.cpp \
 	astinput.o \
 	astnode.o \
 	errors.o \
+	evaluator.o \
 	nodekind.o \
 	parser.o \
+	stdlib.o \
+	structure.o \
 
 test: test/test
 	./test/test -d yes
@@ -27,9 +30,13 @@ test/test.cpp: test/catch.h
 
 test/test: test/test.cpp \
 	test/astnode.o \
+	test/evaluator.o \
 	test/parser.o \
 	astinput.o \
 	astnode.o \
 	errors.o \
+	evaluator.o \
 	nodekind.o \
 	parser.o \
+	stdlib.o \
+	structure.o \
