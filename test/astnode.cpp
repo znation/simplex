@@ -53,7 +53,9 @@ TEST_CASE("ASTNode") {
 
   std::vector<std::string> expressions = {
     "( + 3 4)",
-    " (  +  3  4  ) "
+    " (  +  3  4  ) ",
+    "(- 1.5)",
+    "(* (- 1.5) 2)",
   };
   append(expressions, whitespaceVariations(identifiers));
   append(expressions, whitespaceVariations(literals));

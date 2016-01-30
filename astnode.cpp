@@ -241,6 +241,9 @@ ASTNode ASTNode::parseOptionalParameterList(ASTInput& input) {
 void ASTNode::parseParameterList(ASTInput& input) {
   m_children.push_back(parseExpression(input));
   parseOptionalWhitespace(input);
+  if (input.size() == 0) {
+    throw ParseError(NodeKind::parameterList, "end of expression ')'", "EOF");
+  }
   if (input.peek() == ')') {
     // hit end of parameter list
     return;

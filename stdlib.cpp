@@ -71,7 +71,35 @@ Structure minus(std::vector<Structure> params) {
   }
 }
 
+Structure times(std::vector<Structure> params) {
+  assert(params.size() >= 1);
+  bool allInteger = true;
+  for (const Structure& param : params) {
+    if (param.kind() != StructureKind::integer) {
+      allInteger = false;
+    }
+  }
+  if (allInteger) {
+    int64_t ret = 1;
+    for (const Structure& param : params) {
+      ret *= param.integer();
+    }
+    return Structure(ret);
+  } else {
+    double ret = 1.0;
+    for (const Structure& param : params) {
+      if (param.kind() == StructureKind::integer) {
+        ret *= param.integer();
+      } else {
+        ret *= param.floatingPoint();
+      }
+    }
+    return Structure(ret);
+  }
+}
+
 void stdlib::addSymbols(SymbolTable& symbols) {
   symbols["+"] = plus;
   symbols["-"] = minus;
+  symbols["*"] = times;
 }
