@@ -83,9 +83,20 @@ static Structure divide(std::vector<Structure> params) {
   }
 }
 
+static Structure equals(std::vector<Structure> params) {
+  assert(params.size() >= 2);
+  const auto& reference = params[0];
+  bool ret = true;
+  for (const auto& param : params) {
+    ret = ret && (reference == param);
+  }
+  return Structure(ret);
+}
+
 void stdlib::addSymbols(SymbolTable& symbols) {
   symbols["+"] = plus;
   symbols["-"] = minus;
   symbols["*"] = times;
   symbols["/"] = divide;
+  symbols["="] = equals;
 }

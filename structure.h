@@ -9,6 +9,7 @@
 
 namespace simplex {
   enum class StructureKind {
+    boolean,
     cons,
     function,
     integer,
@@ -28,12 +29,14 @@ namespace simplex {
       union {
         int64_t m_int;
         double m_float;
+        bool m_bool;
       };
       std::string m_string;
       Function m_function;
 
     public:
       Structure();
+      explicit Structure(bool);
       explicit Structure(int64_t);
       explicit Structure(double);
       explicit Structure(const std::string& s);
@@ -45,14 +48,17 @@ namespace simplex {
 
       // accessors
       StructureKind kind() const;
+      bool boolean() const;
       int64_t integer() const;
       double floatingPoint() const;
       std::string string() const;
 
       // comparison
-      bool operator==(int64_t);
-      bool operator==(double);
-      bool operator==(int);
+      bool operator==(const Structure&) const;
+      bool operator==(bool) const;
+      bool operator==(int64_t) const;
+      bool operator==(double) const;
+      bool operator==(int) const;
   };
 
   std::ostream& operator<<(std::ostream&, const Structure&);
