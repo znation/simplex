@@ -32,6 +32,7 @@ test/test: test/test.cpp \
 	test/astnode.o \
 	test/evaluator.o \
 	test/parser.o \
+	test/runner.o \
 	astinput.o \
 	astnode.o \
 	errors.o \
