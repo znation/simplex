@@ -8,6 +8,9 @@
 *.gch
 *.pch
 
+# Dependency tracking for Makefile
+*.d
+
 # Compiled Dynamic libraries
 *.so
 *.dylib

@@ -24,7 +24,7 @@ std::vector<Structure> Evaluator::evalParameters(const ASTNode& node) {
   assert(node.kind() == NodeKind::parameterList);
   std::vector<Structure> ret;
   for (const auto& child : node.children()) {
-    ret.push_back(evalExpression(child));
+    ret.push_back(eval(child));
   }
   return ret;
 }
@@ -56,20 +56,11 @@ Structure Evaluator::evalProgram(const ASTNode& node) {
 
 Structure Evaluator::evalExpression(const ASTNode& node) {
   assert(node.kind() == NodeKind::expression);
-  auto children = node.children();
-  if (children.size() == 1) {
-    // literal or identifier
-    if (children[0].kind() == NodeKind::identifier) {
-      return Structure(m_symbols.at(children[0].string()));
-    } else {
-      return evalLiteral(children[0]);
-    }
-  } else {
-    assert(children.size() == 2);
-    Structure fn = evalExpression(children[0]);
-    std::vector<Structure> params = evalParameters(children[1]);
-    return fn(params);
-  }
+  const auto& children = node.children();
+  assert(children.size() == 2);
+  Structure fn = eval(children[0]);
+  std::vector<Structure> params = evalParameters(children[1]);
+  return fn(params);
 }
 
 Structure Evaluator::eval(const ASTNode& node) {
@@ -78,6 +69,10 @@ Structure Evaluator::eval(const ASTNode& node) {
       return evalProgram(node);
     case NodeKind::expression:
       return evalExpression(node);
+    case NodeKind::identifier:
+      return Structure(m_symbols.at(node.string()));
+    case NodeKind::literal:
+      return evalLiteral(node);
     default:
       std::stringstream ss;
       ss << "not implemented: ";

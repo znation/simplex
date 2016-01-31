@@ -80,9 +80,9 @@ ASTNode ASTNode::parseExpression(ASTInput& input) {
     parseOptionalWhitespace(input);
     expect(kind, input, ")");
   } else if (next == '\'' || std::isdigit(next)) {
-    ret.m_children.push_back(parseLiteral(input));
+    ret = parseLiteral(input);
   } else {
-    ret.m_children.push_back(parseIdentifier(input));
+    ret = parseIdentifier(input);
   }
   parseOptionalWhitespace(input);
   return ret;

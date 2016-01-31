@@ -80,7 +80,11 @@ TEST_CASE("ASTNode") {
       ASTInput input(str.c_str(), str.size());
       ASTNode result;
       CHECK_NOTHROW(result = ASTNode::parseExpression(input));
-      CHECK(result.kind() == NodeKind::expression);
+      // resulting NodeKind could be any of:
+      // * expression
+      // * literal
+      // * identifier
+      // due to simplified parse tree structure (useless expressions are skipped).
     }
   }
 

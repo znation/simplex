@@ -3,10 +3,18 @@
 CXXFLAGS=\
 	  -DDEBUG \
 		-g \
-		-O0 \
 		--std=c++14 \
+		-O0 \
+		-MMD \
+		-MP \
 		-Wall \
 		-Werror \
+
+SRCS=$(wildcard *.cpp) \
+		 $(wildcard test/*.cpp) \
+
+OBJECTS=$(patsubst %.cpp,%.o,$(SRCS))
+DEPENDS=${OBJECTS:.o=.d}
 
 all: simplex
 
@@ -15,6 +23,7 @@ simplex: simplex.cpp \
 	astnode.o \
 	errors.o \
 	evaluator.o \
+	main.o \
 	nodekind.o \
 	parser.o \
 	stdlib.o \
@@ -41,3 +50,5 @@ test/test: test/test.cpp \
 	parser.o \
 	stdlib.o \
 	structure.o \
+
+-include ${DEPENDS}
