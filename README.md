@@ -46,13 +46,9 @@ Strings can be any permutation of characters surrounded by `'`, excluding `'` un
 
 #### Creation
 
-##### `define arguments expression`
+##### `lambda arg1 arg2... expression`
 
-`define` creates a function, taking arguments and an expression that can use those arguments.
-
-##### `arg index`
-
-`arg` accesses arguments to the current expression, by index.
+`lambda` creates a function, taking named (identifier) arguments and an expression that can use those arguments.
 
 ##### `let name expression`
 

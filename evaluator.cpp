@@ -11,6 +11,8 @@ Evaluator::Evaluator() {
   stdlib::addSymbols(m_symbols);
 }
 
+Evaluator::Evaluator(const SymbolTable& symbols) : m_symbols(symbols) {}
+
 std::vector<Structure> Evaluator::evalParameters(const ASTNode& node) {
   if (node.kind() == NodeKind::optionalParameterList) {
     auto children = node.children();
@@ -54,10 +56,46 @@ Structure Evaluator::evalProgram(const ASTNode& node) {
   return ret;
 }
 
+static std::unordered_map<std::string, Structure> dictOfParams(const std::vector<ASTNode>& parameterList, std::vector<Structure> parameterValues) {
+  std::unordered_map<std::string, Structure> ret;
+  size_t nParams = parameterList.size() - 1;
+  assert(nParams == parameterValues.size());
+  for (size_t i=0; i<nParams; i++) {
+    const auto& param = parameterList[i];
+    assert(param.kind() == NodeKind::identifier);
+    const auto& value = parameterValues[i];
+    ret[param.string()] = value;
+  }
+  return ret;
+}
+
+Structure Evaluator::evalLambdaExpression(const ASTNode& node) {
+  assert(node.kind() == NodeKind::expression);
+  const auto& children = node.children();
+  assert(children.size() == 2);
+  assert(children[0].kind() == NodeKind::identifier &&
+         children[0].string() == "lambda");
+  assert(children[1].kind() == NodeKind::optionalParameterList);
+  const auto& parameterList = children[1].children()[0].children();
+
+
+
+  return Structure(static_cast<Structure::Function>([this, parameterList](std::vector<Structure> params) {
+    SymbolTable symbols = m_symbols.augment(dictOfParams(parameterList, params));
+    Evaluator e(symbols);
+    const auto& body = parameterList[parameterList.size()-1];
+    return e.eval(body);
+  }));
+}
+
 Structure Evaluator::evalExpression(const ASTNode& node) {
   assert(node.kind() == NodeKind::expression);
   const auto& children = node.children();
   assert(children.size() == 2);
+  if (children[0].kind() == NodeKind::identifier &&
+      children[0].string() == "lambda") {
+    return this->evalLambdaExpression(node);
+  }
   Structure fn = eval(children[0]);
   std::vector<Structure> params = evalParameters(children[1]);
   return fn(params);

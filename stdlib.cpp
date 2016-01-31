@@ -94,9 +94,9 @@ static Structure equals(std::vector<Structure> params) {
 }
 
 void stdlib::addSymbols(SymbolTable& symbols) {
-  symbols["+"] = plus;
-  symbols["-"] = minus;
-  symbols["*"] = times;
-  symbols["/"] = divide;
-  symbols["="] = equals;
+  symbols["+"] = Structure(static_cast<Structure::Function>(plus));
+  symbols["-"] = Structure(static_cast<Structure::Function>(minus));
+  symbols["*"] = Structure(static_cast<Structure::Function>(times));
+  symbols["/"] = Structure(static_cast<Structure::Function>(divide));
+  symbols["="] = Structure(static_cast<Structure::Function>(equals));
 }

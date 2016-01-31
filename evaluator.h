@@ -7,6 +7,7 @@ namespace simplex {
     private:
       SymbolTable m_symbols;
       Structure evalExpression(const ASTNode&);
+      Structure evalLambdaExpression(const ASTNode&);
       Structure evalLiteral(const ASTNode&);
       std::vector<Structure> evalParameters(const ASTNode&);
       Structure evalProgram(const ASTNode&);
@@ -14,6 +15,7 @@ namespace simplex {
 
     public:
       Evaluator();
+      Evaluator(const SymbolTable&);
       Structure eval(const std::string&);
   };
 };

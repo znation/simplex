@@ -28,6 +28,7 @@ simplex: simplex.cpp \
 	parser.o \
 	stdlib.o \
 	structure.o \
+	symboltable.o \
 
 test: test/test
 	./test/test -d yes
@@ -50,5 +51,6 @@ test/test: test/test.cpp \
 	parser.o \
 	stdlib.o \
 	structure.o \
+	symboltable.o \
 
 -include ${DEPENDS}
