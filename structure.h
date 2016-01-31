@@ -42,18 +42,21 @@ namespace simplex {
 
       // operators
       Structure operator()(std::vector<Structure> params);
-      std::ostream& operator<<(std::ostream& os) const;
 
       // accessors
       StructureKind kind() const;
       int64_t integer() const;
       double floatingPoint() const;
+      std::string string() const;
 
       // comparison
       bool operator==(int64_t);
       bool operator==(double);
       bool operator==(int);
   };
+
+  std::ostream& operator<<(std::ostream&, const Structure&);
 };
+
 
 #endif

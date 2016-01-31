@@ -10,7 +10,7 @@
 namespace simplex {
   class ASTNode {
     private:
-      ASTNode(NodeKind kind);
+      explicit ASTNode(NodeKind kind);
       NodeKind m_kind;
       union {
         int64_t m_int;
@@ -47,8 +47,8 @@ namespace simplex {
       static ASTNode parseProgram(const char *, size_t);
       bool operator==(const ASTNode& other) const;
   };
-};
 
-std::ostream& operator<<(std::ostream&, const simplex::ASTNode&);
+  std::ostream& operator<<(std::ostream&, const ASTNode&);
+};
 
 #endif

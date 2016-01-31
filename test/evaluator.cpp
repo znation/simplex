@@ -19,5 +19,10 @@ TEST_CASE("Evaluator") {
     CHECK(e.eval("(* 8 2)") == 16);
     CHECK(e.eval("(* (- 2) 24)") == -48);
     CHECK(e.eval("(* (- 1.5) 2)") == -3.0);
+    CHECK(e.eval("(/ 8 2)") == 4);
+    CHECK(e.eval("(/ (- 2) 24)") == 0);
+    CHECK(e.eval("(/ (- 58) 3)") == -19);
+    CHECK(e.eval("(/ (- 1.5) 2)") == -0.75);
+    CHECK(e.eval("(/ 0.5 2.0)") == 0.25);
   }
 }

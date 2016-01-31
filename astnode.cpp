@@ -3,7 +3,6 @@
 
 #include <cassert>
 #include <cctype>
-#include <iostream>
 #include <sstream>
 
 using namespace simplex;
@@ -46,7 +45,7 @@ std::string ASTNode::toString() const {
   return ss.str();
 }
 
-std::ostream& operator<<(std::ostream& stream, const ASTNode& node) {
+std::ostream& simplex::operator<<(std::ostream& stream, const ASTNode& node) {
   std::string result = node.toString();
   stream << result;
   return stream;
