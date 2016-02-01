@@ -40,6 +40,8 @@ Identifiers can be any permutation of one or more non-whitespace characters, exc
 
 Strings can be any permutation of characters surrounded by `'`, excluding `'` unless escaped as `\'`.
 
+See the [unit tests](test/evaluator.cpp) for some examples of simple programs/expressions.
+
 ## Semantics
 
 ### Built in identifiers (reserved words)
@@ -79,7 +81,7 @@ Mathematical operators and (type-safe!) equality operator.
 
 ##### `sequence expr1 expr2 expr3 etc.`
 
-`sequence` runs multiple expressions in sequence. Returns a list of the results of the expressions.
+`sequence` runs multiple expressions in sequence. Returns the result of the last expression and discards the results of prior expressions.
 
 #### Future (Roadmap)
 
