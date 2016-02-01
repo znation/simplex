@@ -57,3 +57,11 @@ TEST_CASE("let with sequence [evaluation]") {
   Evaluator e;
   CHECK(e.eval("(sequence (let a 2) (let b 9) (+ a b))") == 11);
 }
+
+TEST_CASE("cons") {
+  Evaluator e;
+  CHECK(e.eval("(let a (cons 3 4))") == true);
+  CHECK(e.eval("(car a)") == 3);
+  CHECK(e.eval("(cdr a)") == 4);
+  CHECK(e.eval("(= (list 1 2 3) (cons 1 (cons 2 (cons 3 nil))))") == true);
+}

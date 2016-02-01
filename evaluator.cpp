@@ -125,7 +125,12 @@ Structure Evaluator::eval(const ASTNode& node) {
     case NodeKind::expression:
       return evalExpression(node);
     case NodeKind::identifier:
-      assert(m_symbols.find(node.string()) != m_symbols.end());
+      if (m_symbols.find(node.string()) == m_symbols.end()) {
+        std::stringstream ss;
+        ss << "undeclared identifier: ";
+        ss << node.string();
+        throw ss.str();
+      }
       return Structure(m_symbols.at(node.string()));
     case NodeKind::literal:
       return evalLiteral(node);

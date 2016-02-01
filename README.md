@@ -44,6 +44,12 @@ Strings can be any permutation of characters surrounded by `'`, excluding `'` un
 
 ### Built in identifiers (reserved words)
 
+#### Values
+
+##### `nil`
+
+`nil` represents a lack of something; nothing. Usually the sentinel value at the end of a list.
+
 #### Creation
 
 ##### `lambda arg1 arg2... expression`
@@ -69,15 +75,17 @@ See [wikipedia](https://en.wikipedia.org/wiki/Cons) for more details.
 
 Mathematical operators and (type-safe!) equality operator.
 
+#### Control Flow
+
+##### `sequence expr1 expr2 expr3 etc.`
+
+`sequence` runs multiple expressions in sequence. Returns a list of the results of the expressions.
+
 #### Future (Roadmap)
 
 ##### `import filename`
 
 `import` imports the specified file as a module, into the current scope.
-
-##### `sequence expr1 expr2 expr3 etc.`
-
-`sequence` runs multiple expressions in sequence. Returns a list of the results of the expressions.
 
 ##### `parallel expr1 expr2 expr3 etc.`
 

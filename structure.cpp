@@ -14,6 +14,11 @@ Structure::Structure(Function fn) :
   m_kind(StructureKind::function), m_function(fn) { }
 Structure::Structure(std::shared_ptr<Structure>&& car, std::shared_ptr<Structure>&& cdr) :
   m_kind(StructureKind::cons), m_car(std::move(car)), m_cdr(std::move(cdr)) { }
+Structure Structure::Nil() {
+  Structure ret;
+  ret.m_kind = StructureKind::nil;
+  return ret;
+}
 
 std::ostream& simplex::operator<<(std::ostream& stream, const Structure& s) {
   switch (s.kind()) {
@@ -32,6 +37,8 @@ std::ostream& simplex::operator<<(std::ostream& stream, const Structure& s) {
       break;
     case StructureKind::invalid:
       throw "not implemented";
+    case StructureKind::nil:
+      stream << "nil";
     case StructureKind::string:
       stream << s.string();
       break;
@@ -47,7 +54,8 @@ bool Structure::operator==(const Structure& s) const {
     case StructureKind::boolean:
       return m_bool == s.boolean();
     case StructureKind::cons:
-      throw "not implemented";
+      return (*m_car == *(s.m_car)) &&
+             (*m_cdr == *(s.m_cdr));
     case StructureKind::floatingPoint:
       return m_float == s.m_float;
     case StructureKind::function:
@@ -56,6 +64,8 @@ bool Structure::operator==(const Structure& s) const {
       return m_int == s.m_int;
     case StructureKind::invalid:
       throw "not implemented";
+    case StructureKind::nil:
+      return true;
     case StructureKind::string:
       return m_string == s.m_string;
   }
@@ -104,6 +114,14 @@ int64_t Structure::integer() const {
 std::string Structure::string() const {
   assert(m_kind == StructureKind::string);
   return m_string;
+}
+
+const Structure& Structure::car() const {
+  return *m_car;
+}
+
+const Structure& Structure::cdr() const {
+  return *m_cdr;
 }
 
 StructureKind Structure::kind() const {

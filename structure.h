@@ -15,6 +15,7 @@ namespace simplex {
     integer,
     invalid,
     floatingPoint,
+    nil,
     string
   };
 
@@ -42,6 +43,7 @@ namespace simplex {
       explicit Structure(const std::string& s);
       explicit Structure(Function fn);
       Structure(std::shared_ptr<Structure>&& car, std::shared_ptr<Structure>&& cdr);
+      static Structure Nil();
 
       // operators
       Structure operator()(std::vector<Structure> params);
@@ -52,6 +54,8 @@ namespace simplex {
       int64_t integer() const;
       double floatingPoint() const;
       std::string string() const;
+      const Structure& car() const;
+      const Structure& cdr() const;
 
       // comparison
       bool operator==(const Structure&) const;

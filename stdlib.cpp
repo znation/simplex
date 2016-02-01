@@ -84,10 +84,12 @@ static Structure divide(std::vector<Structure> params) {
 }
 
 static Structure equals(std::vector<Structure> params) {
-  assert(params.size() >= 2);
+  size_t paramsSize = params.size();
+  assert(paramsSize >= 2);
   const auto& reference = params[0];
   bool ret = true;
-  for (const auto& param : params) {
+  for (size_t i=1; i<paramsSize; i++) {
+    const auto& param = params[i];
     ret = ret && (reference == param);
   }
   return Structure(ret);
@@ -96,15 +98,70 @@ static Structure equals(std::vector<Structure> params) {
 static Structure sequence(std::vector<Structure> params) {
   // rely on the interpreter itself being sequential (single threaded)
   // simply return the last accumulated result
-  assert(params.size() != 0);
-  return params[params.size()-1];
+  size_t paramsSize = params.size();
+  assert(paramsSize != 0);
+  return params[paramsSize-1];
+}
+
+static Structure cons(std::vector<Structure> params) {
+  assert(params.size() == 2);
+  return Structure(
+      std::make_shared<Structure>(params[0]),
+      std::make_shared<Structure>(params[1])
+  );
+}
+
+static Structure car(std::vector<Structure> params) {
+  assert(params.size() == 1);
+  const auto& cons = params[0];
+  assert(cons.kind() == StructureKind::cons);
+  return cons.car();
+}
+
+static Structure cdr(std::vector<Structure> params) {
+  assert(params.size() == 1);
+  const auto& cons = params[0];
+  assert(cons.kind() == StructureKind::cons);
+  return cons.cdr();
+}
+
+static Structure list_impl(const std::vector<Structure>& params, size_t idx) {
+  size_t size = params.size() - idx;
+  assert(size >= 1);
+  if (size == 1) {
+    return Structure(
+      std::make_shared<Structure>(params[idx]),
+      std::make_shared<Structure>(Structure::Nil())
+    );
+  } else {
+    return Structure(
+      std::make_shared<Structure>(params[idx]),
+      std::make_shared<Structure>(list_impl(params, idx+1))
+    );
+  }
+}
+
+static Structure list(std::vector<Structure> params) {
+  return list_impl(params, 0);
 }
 
 void stdlib::addSymbols(SymbolTable& symbols) {
+  // math & comparison operators
   symbols["+"] = Structure(static_cast<Structure::Function>(plus));
   symbols["-"] = Structure(static_cast<Structure::Function>(minus));
   symbols["*"] = Structure(static_cast<Structure::Function>(times));
   symbols["/"] = Structure(static_cast<Structure::Function>(divide));
   symbols["="] = Structure(static_cast<Structure::Function>(equals));
+
+  // control flow
   symbols["sequence"] = Structure(static_cast<Structure::Function>(sequence));
+
+  // structural operators
+  symbols["cons"] = Structure(static_cast<Structure::Function>(cons));
+  symbols["car"] = Structure(static_cast<Structure::Function>(car));
+  symbols["cdr"] = Structure(static_cast<Structure::Function>(cdr));
+  symbols["list"] = Structure(static_cast<Structure::Function>(list));
+
+  // values
+  symbols["nil"] = Structure::Nil();
 }
