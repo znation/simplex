@@ -43,10 +43,17 @@ TEST_CASE("lambda [evaluator]") {
 TEST_CASE("let [evaluation]") {
   Evaluator e;
   CHECK(e.eval("(let add (lambda x y (+ x y)))") == true);
+  CHECK(e.eval("(let five 5)") == true);
+  CHECK(e.eval("(+ five (add 1 2))") == 8);
 }
 
 TEST_CASE("sequence [evaluation]") {
   Evaluator e;
   CHECK(e.eval("(sequence (+ 3 4) (- 5 2))") == 3);
   CHECK(e.eval("(sequence (+ 3 4) (= 5 2))") == false);
+}
+
+TEST_CASE("let with sequence [evaluation]") {
+  Evaluator e;
+  CHECK(e.eval("(sequence (let a 2) (let b 9) (+ a b))") == 11);
 }
