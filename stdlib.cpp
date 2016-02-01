@@ -93,10 +93,18 @@ static Structure equals(std::vector<Structure> params) {
   return Structure(ret);
 }
 
+static Structure sequence(std::vector<Structure> params) {
+  // rely on the interpreter itself being sequential (single threaded)
+  // simply return the last accumulated result
+  assert(params.size() != 0);
+  return params[params.size()-1];
+}
+
 void stdlib::addSymbols(SymbolTable& symbols) {
   symbols["+"] = Structure(static_cast<Structure::Function>(plus));
   symbols["-"] = Structure(static_cast<Structure::Function>(minus));
   symbols["*"] = Structure(static_cast<Structure::Function>(times));
   symbols["/"] = Structure(static_cast<Structure::Function>(divide));
   symbols["="] = Structure(static_cast<Structure::Function>(equals));
+  symbols["sequence"] = Structure(static_cast<Structure::Function>(sequence));
 }

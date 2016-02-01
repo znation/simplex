@@ -44,3 +44,9 @@ TEST_CASE("let [evaluation]") {
   Evaluator e;
   CHECK(e.eval("(let add (lambda x y (+ x y)))") == true);
 }
+
+TEST_CASE("sequence [evaluation]") {
+  Evaluator e;
+  CHECK(e.eval("(sequence (+ 3 4) (- 5 2))") == 3);
+  CHECK(e.eval("(sequence (+ 3 4) (= 5 2))") == false);
+}
