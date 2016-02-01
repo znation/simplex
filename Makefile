@@ -36,7 +36,7 @@ test: test/test
 test/catch.h:
 	curl -o $@ https://raw.githubusercontent.com/philsquared/Catch/v1.3.3/single_include/catch.hpp
 
-test/test.cpp: test/catch.h
+test/runner.cpp: test/catch.h
 
 test/test: test/test.cpp \
 	test/astnode.o \
