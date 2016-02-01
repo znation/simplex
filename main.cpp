@@ -1,4 +1,7 @@
-#include "parser.h"
+#include "evaluator.h"
+#include "repl.h"
+
+#include <unistd.h>
 
 #include <iostream>
 #include <string>
@@ -6,7 +9,11 @@
 using namespace simplex;
 
 int main(int argc, char* argv[]) {
-  ASTNode root = Parser::parse(std::cin);
-  std::cout << root;
-  return 0;
+  Evaluator e;
+  if (isatty(fileno(stdin))) {
+    Repl r;
+    r.run();
+  } else {
+    std::cout << e.eval(std::cin);
+  }
 }

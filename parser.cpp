@@ -1,6 +1,6 @@
 #include "parser.h"
 
-#ifdef DEBUG
+#ifdef DEBUG_PARSER
 #include <iostream>
 #endif
 
@@ -9,7 +9,7 @@ using namespace simplex;
 
 ASTNode Parser::parse(const std::string& input) {
   auto ret = ASTNode::parseProgram(input.c_str(), input.size());
-#ifdef DEBUG
+#ifdef DEBUG_PARSER
   std::cout << ret << std::endl;
 #endif
   return ret;

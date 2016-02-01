@@ -26,6 +26,7 @@ simplex: simplex.cpp \
 	main.o \
 	nodekind.o \
 	parser.o \
+	repl.o \
 	stdlib.o \
 	structure.o \
 	symboltable.o \

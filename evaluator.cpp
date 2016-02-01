@@ -146,3 +146,12 @@ Structure Evaluator::eval(const std::string& input) {
   ASTNode ast = Parser::parse(input);
   return eval(ast);
 }
+
+Structure Evaluator::eval(std::istream& input) {
+  std::string buffer;
+  for (std::string line; std::getline(input, line);) {
+    buffer.append(line);
+    buffer.push_back('\n');
+  }
+  return eval(buffer);
+}

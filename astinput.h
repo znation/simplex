@@ -8,7 +8,7 @@ namespace simplex {
     private:
       const char *stream;
       size_t len;
-#ifdef DEBUG
+#ifdef DEBUG_ASTINPUT
       const char *originalStream;
       size_t originalLen;
 #endif

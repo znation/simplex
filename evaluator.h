@@ -18,5 +18,6 @@ namespace simplex {
       Evaluator();
       Evaluator(const SymbolTable&);
       Structure eval(const std::string&);
+      Structure eval(std::istream& input);
   };
 };

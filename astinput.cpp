@@ -2,14 +2,14 @@
 
 #include <cassert>
 
-#ifdef DEBUG
+#ifdef DEBUG_ASTINPUT
 #include <iostream>
 #endif
 
 using namespace simplex;
 
 ASTInput::ASTInput(const char *stream, size_t len) :
-#ifdef DEBUG
+#ifdef DEBUG_ASTINPUT
   stream(stream), len(len), originalStream(stream), originalLen(len) {
   std::cout << "DEBUG: input stream at "
             << std::hex
