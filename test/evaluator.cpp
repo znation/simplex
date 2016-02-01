@@ -39,3 +39,8 @@ TEST_CASE("lambda [evaluator]") {
   CHECK(e.eval("((lambda x y (+ x y)) 3 4)") == 7);
   CHECK(e.eval("((lambda x (+ x 5)) 2)") == 7);
 }
+
+TEST_CASE("let [evaluation]") {
+  Evaluator e;
+  CHECK(e.eval("(let add (lambda x y (+ x y)))") == true);
+}

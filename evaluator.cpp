@@ -77,9 +77,6 @@ Structure Evaluator::evalLambdaExpression(const ASTNode& node) {
          children[0].string() == "lambda");
   assert(children[1].kind() == NodeKind::optionalParameterList);
   const auto& parameterList = children[1].children()[0].children();
-
-
-
   return Structure(static_cast<Structure::Function>([this, parameterList](std::vector<Structure> params) {
     SymbolTable symbols = m_symbols.augment(dictOfParams(parameterList, params));
     Evaluator e(symbols);
@@ -88,14 +85,34 @@ Structure Evaluator::evalLambdaExpression(const ASTNode& node) {
   }));
 }
 
+Structure Evaluator::evalLetExpression(const ASTNode& node) {
+  assert(node.kind() == NodeKind::expression);
+  const auto children = node.children();
+  assert(children.size() == 2);
+  assert(children[0].kind() == NodeKind::identifier &&
+         children[0].string() == "let");
+  assert(children[1].kind() == NodeKind::optionalParameterList);
+  const auto parameterList = children[1].children()[0];
+  const auto id_with_value = parameterList.children();
+  assert(id_with_value.size() == 2);
+  const auto& id = id_with_value[0];
+  assert(id.kind() == NodeKind::identifier);
+  m_symbols[id.string()] = eval(id_with_value[1]);
+  return Structure(true);
+}
+
 Structure Evaluator::evalExpression(const ASTNode& node) {
   assert(node.kind() == NodeKind::expression);
   const auto& children = node.children();
   assert(children.size() == 2);
-  if (children[0].kind() == NodeKind::identifier &&
-      children[0].string() == "lambda") {
-    return this->evalLambdaExpression(node);
+  if (children[0].kind() == NodeKind::identifier) {
+    if (children[0].string() == "lambda") {
+      return this->evalLambdaExpression(node);
+    } else if (children[0].string() == "let") {
+      return this->evalLetExpression(node);
+    }
   }
+
   Structure fn = eval(children[0]);
   std::vector<Structure> params = evalParameters(children[1]);
   return fn(params);
@@ -108,6 +125,7 @@ Structure Evaluator::eval(const ASTNode& node) {
     case NodeKind::expression:
       return evalExpression(node);
     case NodeKind::identifier:
+      assert(m_symbols.find(node.string()) != m_symbols.end());
       return Structure(m_symbols.at(node.string()));
     case NodeKind::literal:
       return evalLiteral(node);

@@ -8,6 +8,7 @@ namespace simplex {
       SymbolTable m_symbols;
       Structure evalExpression(const ASTNode&);
       Structure evalLambdaExpression(const ASTNode&);
+      Structure evalLetExpression(const ASTNode&);
       Structure evalLiteral(const ASTNode&);
       std::vector<Structure> evalParameters(const ASTNode&);
       Structure evalProgram(const ASTNode&);
