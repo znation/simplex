@@ -16,7 +16,10 @@ SRCS=$(wildcard *.cpp) \
 OBJECTS=$(patsubst %.cpp,%.o,$(SRCS))
 DEPENDS=${OBJECTS:.o=.d}
 
-all: simplex
+default: simplex
+
+clean:
+	rm -f ${OBJECTS} ${DEPENDS}
 
 simplex: simplex.cpp \
 	astinput.o \
@@ -37,7 +40,7 @@ test: test/test
 test/catch.h:
 	curl -o $@ https://raw.githubusercontent.com/philsquared/Catch/v1.3.3/single_include/catch.hpp
 
-test/runner.cpp: test/catch.h
+test/%.cpp: test/catch.h
 
 test/test: test/test.cpp \
 	test/astnode.o \
