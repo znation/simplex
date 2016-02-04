@@ -1,3 +1,4 @@
+#include "errors.h"
 #include "structure.h"
 
 #include <cassert>
@@ -121,6 +122,9 @@ bool Structure::operator==(const char * str) const {
 
 // operators
 Structure::operator bool() const {
+  if (m_kind != StructureKind::boolean) {
+    throw TypeMismatchError(*this, StructureKind::boolean);
+  }
   assert(m_kind == StructureKind::boolean);
   return m_bool;
 }

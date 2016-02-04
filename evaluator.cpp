@@ -1,3 +1,4 @@
+#include "errors.h"
 #include "evaluator.h"
 #include "parser.h"
 #include "stdlib.h"
@@ -85,6 +86,24 @@ Structure Evaluator::evalLambdaExpression(const ASTNode& node) {
   }));
 }
 
+Structure Evaluator::evalCondExpression(const ASTNode& node) {
+  assert(node.kind() == NodeKind::expression);
+  const auto children = node.children();
+  assert(children.size() == 2);
+  assert(children[0].kind() == NodeKind::identifier &&
+         children[0].string() == "cond");
+  assert(children[1].kind() == NodeKind::optionalParameterList);
+  const auto parameters = children[1].children()[0].children();
+  assert(parameters.size() % 2 == 0); // must be even number
+  for (size_t i=0; i<parameters.size(); i+=2) {
+    const auto condition = this->eval(parameters[i]);
+    if (condition) {
+      return this->eval(parameters[i+1]);
+    }
+  }
+  throw RuntimeError("`cond` expression did not return a value (no condition evaluated to true)");
+}
+
 Structure Evaluator::evalIfExpression(const ASTNode& node) {
   assert(node.kind() == NodeKind::expression);
   const auto children = node.children();
@@ -129,6 +148,8 @@ Structure Evaluator::evalExpression(const ASTNode& node) {
       return this->evalLetExpression(node);
     } else if (children[0].string() == "if") {
       return this->evalIfExpression(node);
+    } else if (children[0].string() == "cond") {
+      return this->evalCondExpression(node);
     }
   }
 

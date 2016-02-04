@@ -36,7 +36,7 @@ In BNF notation:
                  "\r"
 ```
 
-Identifiers can be any permutation of one or more non-whitespace characters, excluding `(`, `)`, `'`, and numbers.
+Identifiers can be any permutation of one or more non-whitespace characters, not starting with a number, and excluding `(`, `)`,  and `'`.
 
 Strings can be any permutation of characters surrounded by `'`, excluding `'` unless escaped as `\'`.
 
@@ -82,6 +82,22 @@ Mathematical operators and (type-safe!) equality operator.
 ##### `sequence expr1 expr2 expr3 etc.`
 
 `sequence` runs multiple expressions in sequence. Returns the result of the last expression and discards the results of prior expressions.
+
+##### `if condition expr1 expr2`
+
+* If `condition` evaluates to `true`, evaluates `expr1` and returns the result.
+* If `condition` evaluates to `false`, evaluates `expr2` and returns the result.
+* If `condition` evaluates to a non-Boolean value, errors.
+Notably (and distinctly from non-conditionals), only the returned expression is evaluated.
+
+##### `cond cond1 expr1 cond2 expr2 etc.`
+
+May be used with any number of parameters.
+Each pair of two parameters (condition and expression), starting from `cond1 expr1`, gives the following behavior:
+* If the condition evaluates to `true`, evaluates the expression and returns the result.
+* If the condition evaluates to `false`, does not evaluate the expression, and moves on to the next pair (if any).
+* If the condition evaluates to a non-Boolean value, errors.
+If no conditional expression evaluates to true, errors.
 
 #### Future (Roadmap)
 

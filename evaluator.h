@@ -6,6 +6,7 @@ namespace simplex {
   class Evaluator {
     private:
       SymbolTable m_symbols;
+      Structure evalCondExpression(const ASTNode&);
       Structure evalExpression(const ASTNode&);
       Structure evalIdentifier(const ASTNode&);
       Structure evalIfExpression(const ASTNode&);

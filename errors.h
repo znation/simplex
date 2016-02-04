@@ -2,16 +2,27 @@
 #include <string>
 
 #include "nodekind.h"
+#include "structure.h"
 
 namespace simplex {
-  class ParseError : public std::exception {
+  class Error : public std::exception {
     private:
       std::string m_message;
-      void init(NodeKind kind, const std::string& expected, const std::string& actual);
-
+    public:
+      Error(const std::string& message);
+      virtual const char* what() const noexcept;
+  };
+  class ParseError : public Error {
     public:
       ParseError(NodeKind kind, const std::string& expected, const std::string& actual);
       ParseError(NodeKind kind, const std::string& expected, char actual);
-      virtual const char* what() const noexcept;
+  };
+  class RuntimeError : public Error {
+    public:
+      RuntimeError(const std::string& message);
+  };
+  class TypeMismatchError : public RuntimeError {
+    public:
+      TypeMismatchError(const Structure& s, StructureKind expected);
   };
 };

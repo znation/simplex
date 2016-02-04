@@ -5,7 +5,7 @@
 
 using namespace simplex;
 
-void ParseError::init(
+static std::string parserErrorMessage(
     NodeKind kind,
     const std::string& expected,
     const std::string& actual) {
@@ -16,17 +16,32 @@ void ParseError::init(
   ss << expected << std::endl;
   ss << "Found:" << std::endl << '\t';
   ss << actual << std::endl;
-  m_message = ss.str();
+  return ss.str();
 }
 
-ParseError::ParseError(NodeKind kind, const std::string& expected, const std::string& actual) {
-  this->init(kind, expected, actual);
+static std::string typeMismatchErrorMessage(
+    const Structure& s,
+    StructureKind expected) {
+  std::stringstream ss;
+  ss << "Type mismatch with value:" << std::endl;
+  ss << s;
+  ss << "Expected " << StructureKindName(expected);
+  ss << ", found " << StructureKindName(s.kind()) << std::endl;
+  return ss.str();
 }
 
-ParseError::ParseError(NodeKind kind, const std::string& expected, char actual) {
-  this->init(kind, expected, std::string(&actual, 1));
-}
+Error::Error(const std::string& str) : m_message(str) {}
 
-const char* ParseError::what() const noexcept {
+const char* Error::what() const noexcept {
   return m_message.c_str();
 }
+
+ParseError::ParseError(NodeKind kind, const std::string& expected, const std::string& actual)
+  : Error(parserErrorMessage(kind, expected, actual)) {}
+
+ParseError::ParseError(NodeKind kind, const std::string& expected, char actual)
+  : Error(parserErrorMessage(kind, expected, std::string(&actual, 1))) {}
+
+RuntimeError::RuntimeError(const std::string& str) : Error(str) {}
+
+TypeMismatchError::TypeMismatchError(const Structure& s, StructureKind expected) : RuntimeError(typeMismatchErrorMessage(s, expected)) {}

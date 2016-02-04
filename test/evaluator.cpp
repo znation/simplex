@@ -1,5 +1,6 @@
 #define UNIT_TESTING
 #include "../evaluator.h"
+#include "../errors.h"
 
 #include "catch.h"
 
@@ -66,8 +67,12 @@ TEST_CASE("cons") {
   CHECK(e.eval("(= (list 1 2 3) (cons 1 (cons 2 (cons 3 nil))))") == true);
 }
 
-TEST_CASE("if") {
+TEST_CASE("conditionals") {
   Evaluator e;
   CHECK(e.eval("(if true 'hello' 'world')") == "hello");
   CHECK(e.eval("(if false 'hello' 'world')") == "world");
+  CHECK(e.eval("(cond false 'foo' true 'bar' false 'baz')") == "bar");
+  CHECK(e.eval("(cond false 'foo' false 'bar' true 'baz')") == "baz");
+  CHECK_THROWS_AS(e.eval("(cond false 'foo' false 'bar' false 'qux')"), RuntimeError);
+  CHECK_THROWS_AS(e.eval("(cond false 'foo' 'bar' true 'baz' 'qux')"), TypeMismatchError);
 }
