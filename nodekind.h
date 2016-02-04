@@ -3,18 +3,18 @@
 
 namespace simplex {
   enum class NodeKind {
-    program,
     expression,
-    optionalParameterList,
-    parameterList,
-    literal,
-    number,
-    integer,
     floatingPoint,
     identifier,
+    integer,
+    invalid,
+    literal,
+    number,
+    optionalParameterList,
+    parameterList,
+    program,
     string,
     whitespace,
-    invalid
   };
 
   const char* NodeKindName(NodeKind kind);

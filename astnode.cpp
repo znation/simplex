@@ -173,6 +173,7 @@ ASTNode ASTNode::parseString(ASTInput& input) {
   }
 
   expect(kind, input, "'");
+  ret.m_string = ss.str();
   return ret;
 }
 

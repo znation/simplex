@@ -20,7 +20,30 @@ Structure Structure::Nil() {
   return ret;
 }
 
+const char * simplex::StructureKindName(StructureKind kind) {
+  switch (kind) {
+    case StructureKind::boolean:
+      return "boolean";
+    case StructureKind::cons:
+      return "cons";
+    case StructureKind::function:
+      return "function";
+    case StructureKind::integer:
+      return "integer";
+    case StructureKind::invalid:
+      return "invalid";
+    case StructureKind::floatingPoint:
+      return "floatingPoint";
+    case StructureKind::nil:
+      return "nil";
+    case StructureKind::string:
+      return "string";
+  }
+}
+
 std::ostream& simplex::operator<<(std::ostream& stream, const Structure& s) {
+  stream << StructureKindName(s.kind());
+  stream << " (";
   switch (s.kind()) {
     case StructureKind::boolean:
       stream << s.boolean();
@@ -43,6 +66,7 @@ std::ostream& simplex::operator<<(std::ostream& stream, const Structure& s) {
       stream << s.string();
       break;
   }
+  stream << ")";
   return stream;
 }
 
@@ -90,7 +114,17 @@ bool Structure::operator==(bool b) const {
          m_bool == b;
 }
 
+bool Structure::operator==(const char * str) const {
+  return m_kind == StructureKind::string &&
+         m_string == str;
+}
+
 // operators
+Structure::operator bool() const {
+  assert(m_kind == StructureKind::boolean);
+  return m_bool;
+}
+
 Structure Structure::operator()(std::vector<Structure> params) {
   assert(m_kind == StructureKind::function);
   return m_function(params);

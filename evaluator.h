@@ -7,6 +7,8 @@ namespace simplex {
     private:
       SymbolTable m_symbols;
       Structure evalExpression(const ASTNode&);
+      Structure evalIdentifier(const ASTNode&);
+      Structure evalIfExpression(const ASTNode&);
       Structure evalLambdaExpression(const ASTNode&);
       Structure evalLetExpression(const ASTNode&);
       Structure evalLiteral(const ASTNode&);

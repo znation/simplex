@@ -65,3 +65,9 @@ TEST_CASE("cons") {
   CHECK(e.eval("(cdr a)") == 4);
   CHECK(e.eval("(= (list 1 2 3) (cons 1 (cons 2 (cons 3 nil))))") == true);
 }
+
+TEST_CASE("if") {
+  Evaluator e;
+  CHECK(e.eval("(if true 'hello' 'world')") == "hello");
+  CHECK(e.eval("(if false 'hello' 'world')") == "world");
+}

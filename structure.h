@@ -19,6 +19,8 @@ namespace simplex {
     string
   };
 
+  const char* StructureKindName(StructureKind kind);
+
   class Structure {
     public:
       typedef std::function<Structure(std::vector<Structure>)> Function;
@@ -47,6 +49,7 @@ namespace simplex {
 
       // operators
       Structure operator()(std::vector<Structure> params);
+      operator bool() const;
 
       // accessors
       StructureKind kind() const;
@@ -63,6 +66,8 @@ namespace simplex {
       bool operator==(int64_t) const;
       bool operator==(double) const;
       bool operator==(int) const;
+      bool operator==(const std::string&) const;
+      bool operator==(const char *) const;
   };
 
   std::ostream& operator<<(std::ostream&, const Structure&);

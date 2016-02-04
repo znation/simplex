@@ -85,6 +85,23 @@ Structure Evaluator::evalLambdaExpression(const ASTNode& node) {
   }));
 }
 
+Structure Evaluator::evalIfExpression(const ASTNode& node) {
+  assert(node.kind() == NodeKind::expression);
+  const auto children = node.children();
+  assert(children.size() == 2);
+  assert(children[0].kind() == NodeKind::identifier &&
+         children[0].string() == "if");
+  assert(children[1].kind() == NodeKind::optionalParameterList);
+  const auto parameters = children[1].children()[0].children();
+  assert(parameters.size() == 3);
+  const auto condition = this->eval(parameters[0]);
+  if (condition) {
+    return this->eval(parameters[1]);
+  } else {
+    return this->eval(parameters[2]);
+  }
+}
+
 Structure Evaluator::evalLetExpression(const ASTNode& node) {
   assert(node.kind() == NodeKind::expression);
   const auto children = node.children();
@@ -110,12 +127,29 @@ Structure Evaluator::evalExpression(const ASTNode& node) {
       return this->evalLambdaExpression(node);
     } else if (children[0].string() == "let") {
       return this->evalLetExpression(node);
+    } else if (children[0].string() == "if") {
+      return this->evalIfExpression(node);
     }
   }
 
   Structure fn = eval(children[0]);
   std::vector<Structure> params = evalParameters(children[1]);
   return fn(params);
+}
+
+Structure Evaluator::evalIdentifier(const ASTNode& node) {
+  const auto str = node.string();
+  if (str == "true") {
+    return Structure(true);
+  } else if (str == "false") {
+    return Structure(false);
+  } else if (m_symbols.find(str) == m_symbols.end()) {
+    std::stringstream ss;
+    ss << "undeclared identifier: ";
+    ss << str;
+    throw ss.str();
+  }
+  return Structure(m_symbols.at(str));
 }
 
 Structure Evaluator::eval(const ASTNode& node) {
@@ -125,13 +159,7 @@ Structure Evaluator::eval(const ASTNode& node) {
     case NodeKind::expression:
       return evalExpression(node);
     case NodeKind::identifier:
-      if (m_symbols.find(node.string()) == m_symbols.end()) {
-        std::stringstream ss;
-        ss << "undeclared identifier: ";
-        ss << node.string();
-        throw ss.str();
-      }
-      return Structure(m_symbols.at(node.string()));
+      return evalIdentifier(node);
     case NodeKind::literal:
       return evalLiteral(node);
     default:
