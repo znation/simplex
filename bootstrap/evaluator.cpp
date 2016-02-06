@@ -168,7 +168,7 @@ Structure Evaluator::evalIdentifier(const ASTNode& node) {
     std::stringstream ss;
     ss << "undeclared identifier: ";
     ss << str;
-    throw ss.str();
+    throw RuntimeError(ss.str());
   }
   return Structure(m_symbols.at(str));
 }

@@ -76,3 +76,9 @@ TEST_CASE("conditionals") {
   CHECK_THROWS_AS(e.eval("(cond false 'foo' false 'bar' false 'qux')"), RuntimeError);
   CHECK_THROWS_AS(e.eval("(cond false 'foo' 'bar' true 'baz' 'qux')"), TypeMismatchError);
 }
+
+TEST_CASE("print") {
+  Evaluator e;
+  // TODO -- plumb through stdio as parameters to Evaluator (dependency injection)
+  // so that we can test print functionality here
+}

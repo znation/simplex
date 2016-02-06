@@ -68,6 +68,9 @@ namespace simplex {
       bool operator==(int) const;
       bool operator==(const std::string&) const;
       bool operator==(const char *) const;
+
+      // conversion
+      std::string to_string() const;
   };
 
   std::ostream& operator<<(std::ostream&, const Structure&);

@@ -2,6 +2,7 @@
 #include "structure.h"
 
 #include <cassert>
+#include <sstream>
 
 using namespace simplex;
 
@@ -43,31 +44,7 @@ const char * simplex::StructureKindName(StructureKind kind) {
 }
 
 std::ostream& simplex::operator<<(std::ostream& stream, const Structure& s) {
-  stream << StructureKindName(s.kind());
-  stream << " (";
-  switch (s.kind()) {
-    case StructureKind::boolean:
-      stream << s.boolean();
-      break;
-    case StructureKind::cons:
-      throw "not implemented";
-    case StructureKind::floatingPoint:
-      stream << s.floatingPoint();
-      break;
-    case StructureKind::function:
-      throw "not implemented";
-    case StructureKind::integer:
-      stream << s.integer();
-      break;
-    case StructureKind::invalid:
-      throw "not implemented";
-    case StructureKind::nil:
-      stream << "nil";
-    case StructureKind::string:
-      stream << s.string();
-      break;
-  }
-  stream << ")";
+  stream << s.to_string();
   return stream;
 }
 
@@ -90,7 +67,7 @@ bool Structure::operator==(const Structure& s) const {
     case StructureKind::invalid:
       throw "not implemented";
     case StructureKind::nil:
-      return true;
+      return true; // TODO should this be false?
     case StructureKind::string:
       return m_string == s.m_string;
   }
@@ -152,6 +129,34 @@ int64_t Structure::integer() const {
 std::string Structure::string() const {
   assert(m_kind == StructureKind::string);
   return m_string;
+}
+
+std::string Structure::to_string() const {
+  std::stringstream ss;
+  switch (m_kind) {
+    case StructureKind::boolean:
+      ss << m_bool;
+      break;
+    case StructureKind::cons:
+      throw "not implemented";
+    case StructureKind::function:
+      throw "not implemented";
+    case StructureKind::integer:
+      ss << m_int;
+      break;
+    case StructureKind::invalid:
+      throw "not implemented";
+    case StructureKind::floatingPoint:
+      ss << m_float;
+      break;
+    case StructureKind::nil:
+      ss << "()";
+      break;
+    case StructureKind::string:
+      ss << m_string;
+      break;
+  }
+  return ss.str();
 }
 
 const Structure& Structure::car() const {

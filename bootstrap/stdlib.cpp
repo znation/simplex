@@ -1,3 +1,4 @@
+#include "errors.h"
 #include "stdlib.h"
 
 #include <cassert>
@@ -145,6 +146,13 @@ static Structure list(std::vector<Structure> params) {
   return list_impl(params, 0);
 }
 
+static Structure print(std::vector<Structure> params) {
+  for (const auto& param : params) {
+    std::cout << param;
+  }
+  return Structure::Nil();
+}
+
 void stdlib::addSymbols(SymbolTable& symbols) {
   // math & comparison operators
   symbols["+"] = Structure(static_cast<Structure::Function>(plus));
@@ -163,5 +171,10 @@ void stdlib::addSymbols(SymbolTable& symbols) {
   symbols["list"] = Structure(static_cast<Structure::Function>(list));
 
   // values
+  const static std::string endl("\n");
+  symbols["endl"] = Structure(endl);
   symbols["nil"] = Structure::Nil();
+
+  // i/o
+  symbols["print"] = Structure(static_cast<Structure::Function>(print));
 }

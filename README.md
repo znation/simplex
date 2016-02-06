@@ -52,6 +52,10 @@ See the [unit tests](test/evaluator.cpp) for some examples of simple programs/ex
 
 `nil` represents a lack of something; nothing. Usually the sentinel value at the end of a list.
 
+##### `endl`
+
+`endl` is an "end of line" character (`\n`).
+
 #### Creation
 
 ##### `lambda arg1 arg2... expression`
@@ -98,6 +102,12 @@ Each pair of two parameters (condition and expression), starting from `cond1 exp
 * If the condition evaluates to `false`, does not evaluate the expression, and moves on to the next pair (if any).
 * If the condition evaluates to a non-Boolean value, errors.
 If no conditional expression evaluates to true, errors.
+
+#### I/O
+
+##### `print expr1 expr2 ...`
+
+`print` prints variadic arguments to standard output.
 
 #### Future (Roadmap)
 
