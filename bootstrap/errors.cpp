@@ -5,43 +5,38 @@
 
 using namespace simplex;
 
-static std::string parserErrorMessage(
+void ParseError::set_message(
     NodeKind kind,
-    const std::string& expected,
-    const std::string& actual) {
-  std::stringstream ss;
-  ss << "Parse error while attempting to parse ";
-  ss << NodeKindName(kind);
-  ss << ". Expected:" << std::endl << '\t';
-  ss << expected << std::endl;
-  ss << "Found:" << std::endl << '\t';
-  ss << actual << std::endl;
-  return ss.str();
+    const char * expected,
+    const char * actual) {
+  std::snprintf(
+      m_message,
+      m_message_size,
+      "parse error while attempting to parse %s: expected %s, found %s",
+      NodeKindName(kind),
+      expected,
+      actual);
 }
 
-static std::string typeMismatchErrorMessage(
-    const Structure& s,
-    StructureKind expected) {
-  std::stringstream ss;
-  ss << "Type mismatch with value:" << std::endl;
-  ss << s;
-  ss << "Expected " << StructureKindName(expected);
-  ss << ", found " << StructureKindName(s.kind()) << std::endl;
-  return ss.str();
+const char * Error::what() const noexcept {
+  return m_message; 
 }
 
-Error::Error(const std::string& str) : m_message(str) {}
-
-const char* Error::what() const noexcept {
-  return m_message.c_str();
+ParseError::ParseError(NodeKind kind, const char * expected, const char * actual) {
+  this->set_message(kind, expected, actual);
 }
 
-ParseError::ParseError(NodeKind kind, const std::string& expected, const std::string& actual)
-  : Error(parserErrorMessage(kind, expected, actual)) {}
+ParseError::ParseError(NodeKind kind, const char * expected, char actual) {
+  char actual_str[2];
+  actual_str[0] = actual;
+  actual_str[1] = 0;
+  this->set_message(kind, expected, actual_str);
+}
 
-ParseError::ParseError(NodeKind kind, const std::string& expected, char actual)
-  : Error(parserErrorMessage(kind, expected, std::string(&actual, 1))) {}
+RuntimeError::RuntimeError(const char * str) {
+  std::strncpy(m_message, str, m_message_size);
+}
 
-RuntimeError::RuntimeError(const std::string& str) : Error(str) {}
-
-TypeMismatchError::TypeMismatchError(const Structure& s, StructureKind expected) : RuntimeError(typeMismatchErrorMessage(s, expected)) {}
+TypeMismatchError::TypeMismatchError(StructureKind expected, StructureKind found) {
+  std::snprintf(m_message, m_message_size, "type mismatch error: expected %s, found %s", StructureKindName(expected), StructureKindName(found));
+}

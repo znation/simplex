@@ -2,6 +2,7 @@
 #include "stdlib.h"
 
 #include <cassert>
+#include <sstream>
 
 using namespace simplex;
 
@@ -146,11 +147,45 @@ static Structure list(std::vector<Structure> params) {
   return list_impl(params, 0);
 }
 
-static Structure print(std::vector<Structure> params) {
-  for (const auto& param : params) {
-    std::cout << param;
+static Structure::Function print(SymbolTable& symbols) {
+  return [&symbols](std::vector<Structure> params) {
+    for (const auto& param : params) {
+      param.print(symbols.output);
+    }
+    return Structure::Nil();
+  };
+}
+
+static Structure::Function read(SymbolTable& symbols) {
+  return [&symbols](std::vector<Structure> params) {
+    if (params.size() > 0) {
+      throw RuntimeError("too many parameters to `read`");
+    }
+    char c;
+    if (symbols.input.get(c)) {
+      return Structure(static_cast<uint8_t>(c));
+    }
+    return Structure::Nil();
+  };
+}
+
+static Structure string(std::vector<Structure> params) {
+  if (params.size() == 0) {
+    throw RuntimeError("not enough parameters to `string`");
   }
-  return Structure::Nil();
+  if (params.size() > 1) {
+    throw RuntimeError("too many parameters to `string`");
+  }
+  const auto& param = params[0];
+  try {
+    std::stringstream ss;
+    param.print(ss);
+    return Structure(ss.str());
+  } catch (TypeMismatchError& e) {
+    std::stringstream ss;
+    ss << param;
+    return Structure(ss.str());
+  }
 }
 
 void stdlib::addSymbols(SymbolTable& symbols) {
@@ -175,6 +210,10 @@ void stdlib::addSymbols(SymbolTable& symbols) {
   symbols["endl"] = Structure(endl);
   symbols["nil"] = Structure::Nil();
 
+  // conversion
+  symbols["string"] = Structure(static_cast<Structure::Function>(string));
+
   // i/o
-  symbols["print"] = Structure(static_cast<Structure::Function>(print));
+  symbols["print"] = Structure(print(symbols));
+  symbols["read"] = Structure(read(symbols));
 }

@@ -50,6 +50,25 @@ const char * simplex::StructureKindName(StructureKind kind) {
   }
 }
 
+void Structure::print(std::ostream& stream) const {
+  // should only be used on strings
+  // otherwise, call to_string() first to get a string representation.
+  if (this->kind() != StructureKind::cons) {
+    throw TypeMismatchError(StructureKind::cons, this->kind());
+  }
+  const auto& car = this->car();
+  const auto& cdr = this->cdr();
+  if (car.kind() != StructureKind::nil) {
+    if (car.kind() != StructureKind::byte) {
+      throw TypeMismatchError(StructureKind::byte, car.kind());
+    }
+    stream << static_cast<char>(car.byte());
+    if (cdr.kind() != StructureKind::nil) {
+      cdr.print(stream);
+    }
+  }
+}
+
 std::ostream& simplex::operator<<(std::ostream& stream, const Structure& s) {
   stream << s.to_string();
   return stream;
@@ -121,7 +140,7 @@ bool Structure::operator==(const char * str) const {
 // operators
 Structure::operator bool() const {
   if (m_kind != StructureKind::boolean) {
-    throw TypeMismatchError(*this, StructureKind::boolean);
+    throw TypeMismatchError(StructureKind::boolean, m_kind);
   }
   assert(m_kind == StructureKind::boolean);
   return m_bool;
@@ -156,7 +175,11 @@ std::string Structure::to_string() const {
   std::stringstream ss;
   switch (m_kind) {
     case StructureKind::boolean:
-      ss << m_bool;
+      if (m_bool) {
+        ss << "true";
+      } else {
+        ss << "false";
+      }
       break;
     case StructureKind::byte:
       ss << m_byte;

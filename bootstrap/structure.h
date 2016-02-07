@@ -76,6 +76,9 @@ namespace simplex {
 
       // conversion
       std::string to_string() const;
+
+      // i/o
+      void print(std::ostream& stream) const;
   };
 
   std::ostream& operator<<(std::ostream&, const Structure&);

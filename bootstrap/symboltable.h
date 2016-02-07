@@ -8,7 +8,9 @@
 namespace simplex {
   class SymbolTable : public std::unordered_map<std::string, Structure> {
     public:
-      SymbolTable();
+      std::istream& input;
+      std::ostream& output;
+      SymbolTable(std::istream& input, std::ostream& output);
       SymbolTable augment(const std::unordered_map<std::string, Structure>&) const;
   };
 };

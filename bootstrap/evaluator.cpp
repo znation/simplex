@@ -8,7 +8,8 @@
 
 using namespace simplex;
 
-Evaluator::Evaluator() {
+Evaluator::Evaluator(std::istream& input, std::ostream& output)
+ : m_symbols(input, output) {
   stdlib::addSymbols(m_symbols);
 }
 
@@ -168,7 +169,8 @@ Structure Evaluator::evalIdentifier(const ASTNode& node) {
     std::stringstream ss;
     ss << "undeclared identifier: ";
     ss << str;
-    throw RuntimeError(ss.str());
+    const auto str = ss.str();
+    throw RuntimeError(str.c_str());
   }
   return Structure(m_symbols.at(str));
 }

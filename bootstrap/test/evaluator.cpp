@@ -77,8 +77,29 @@ TEST_CASE("conditionals") {
   CHECK_THROWS_AS(e.eval("(cond false 'foo' 'bar' true 'baz' 'qux')"), TypeMismatchError);
 }
 
-TEST_CASE("print") {
+TEST_CASE("conversion") {
   Evaluator e;
-  // TODO -- plumb through stdio as parameters to Evaluator (dependency injection)
-  // so that we can test print functionality here
+  CHECK(e.eval("(string 3)") == Structure(std::string("3")));
+  CHECK(e.eval("(string true)") == Structure(std::string("true")));
+  CHECK(e.eval("(string 'abc')") == Structure(std::string("abc")));
+  CHECK(e.eval("(string (cons 1 2))") == Structure(std::string("(cons 1 2)")));
+  CHECK(e.eval("(string 3.842)") == Structure(std::string("3.842")));
+}
+
+TEST_CASE("i/o") {
+  std::stringstream input;
+  std::stringstream output;
+  Evaluator e(input, output);
+
+  e.eval("(print (string (+ 3 4)) endl)");
+  CHECK(output.str() == "7\n");
+
+  e.eval("(print 'hello')");
+  CHECK(output.str() == "7\nhello");
+
+  input << "a\nb";
+  CHECK(e.eval("(read)") == Structure(static_cast<uint8_t>('a')));
+  CHECK(e.eval("(read)") == Structure(static_cast<uint8_t>('\n')));
+  CHECK(e.eval("(read)") == Structure(static_cast<uint8_t>('b')));
+  CHECK(e.eval("(read)") == Structure::Nil());
 }

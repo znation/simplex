@@ -6,6 +6,7 @@ namespace simplex {
   class Evaluator {
     private:
       SymbolTable m_symbols;
+
       Structure evalCondExpression(const ASTNode&);
       Structure evalExpression(const ASTNode&);
       Structure evalIdentifier(const ASTNode&);
@@ -18,7 +19,7 @@ namespace simplex {
       Structure eval(const ASTNode&);
 
     public:
-      Evaluator();
+      Evaluator(std::istream& input = std::cin, std::ostream& output = std::cout);
       Evaluator(const SymbolTable&);
       Structure eval(const std::string&);
       Structure eval(std::istream& input);

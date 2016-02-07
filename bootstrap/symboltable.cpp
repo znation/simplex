@@ -2,7 +2,8 @@
 
 using namespace simplex;
 
-SymbolTable::SymbolTable() {}
+SymbolTable::SymbolTable(std::istream& input, std::ostream& output)
+  : input(input), output(output) {}
 
 SymbolTable SymbolTable::augment(const std::unordered_map<std::string, Structure>& symbols) const {
   SymbolTable ret = *this; // shallow copy

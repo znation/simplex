@@ -58,7 +58,7 @@ See the [unit tests](test/evaluator.cpp) for some examples of simple programs/ex
 
 #### Type Names
 
-All type names (listed above) are reserved words, though currently unused in the language.
+All type names (listed above) are reserved words, even if currently unused in the language.
 
 #### Values
 
@@ -124,6 +124,12 @@ Each pair of two parameters (condition and expression), starting from `cond1 exp
 * If the condition evaluates to `false`, does not evaluate the expression, and moves on to the next pair (if any).
 * If the condition evaluates to a non-Boolean value, errors.
 If no conditional expression evaluates to true, errors.
+
+#### Type Conversion
+
+##### `string x`
+
+Converts x to a string representation.
 
 #### I/O
 

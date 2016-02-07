@@ -14,10 +14,12 @@ static bool isWhitespace(char c) {
 static void expect(NodeKind kind, ASTInput& input, const std::string& token) {
   size_t tokenSize = token.size();
   if (tokenSize > input.size()) {
-    throw ParseError(kind, token, input.remaining());
+    const auto remaining = input.remaining();
+    throw ParseError(kind, token.c_str(), remaining.c_str());
   }
-  if (std::string(input.get(), tokenSize) != token) {
-    throw ParseError(kind, token, std::string(input.get(), tokenSize));
+  const std::string shouldBeToken(input.get(), tokenSize);
+  if (shouldBeToken != token) {
+    throw ParseError(kind, token.c_str(), shouldBeToken.c_str());
   }
   input.advance(tokenSize);
 }

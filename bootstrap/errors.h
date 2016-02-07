@@ -6,23 +6,29 @@
 
 namespace simplex {
   class Error : public std::exception {
-    private:
-      std::string m_message;
+    protected:
+      const static size_t m_message_size = 1024;
+      char m_message[m_message_size] = "";
     public:
-      Error(const std::string& message);
-      virtual const char* what() const noexcept;
+      virtual const char * what() const noexcept;
   };
+
   class ParseError : public Error {
+    private:
+      void set_message(NodeKind kind, const char * expected, const char * actual);
+
     public:
-      ParseError(NodeKind kind, const std::string& expected, const std::string& actual);
-      ParseError(NodeKind kind, const std::string& expected, char actual);
+      ParseError(NodeKind kind, const char * expected, const char * actual);
+      ParseError(NodeKind kind, const char * expected, char actual);
   };
+
   class RuntimeError : public Error {
     public:
-      RuntimeError(const std::string& message);
+      RuntimeError(const char * message);
   };
-  class TypeMismatchError : public RuntimeError {
+
+  class TypeMismatchError : public Error {
     public:
-      TypeMismatchError(const Structure& s, StructureKind expected);
+      TypeMismatchError(StructureKind expected, StructureKind found);
   };
 };
