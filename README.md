@@ -36,7 +36,7 @@ In BNF notation:
                  "\r"
 ```
 
-Identifiers can be any permutation of one or more non-whitespace characters, not starting with a number, and excluding `(`, `)`,  and `'`.
+Identifiers can be any permutation of one or more non-whitespace characters, not starting with a number or `'`, and excluding `(` and `)`.
 
 Strings can be any permutation of characters surrounded by `'`, excluding `'` unless escaped as `\'`.
 

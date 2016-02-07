@@ -54,7 +54,10 @@ test: bootstrap/test/test
 bootstrap/test/catch.h:
 	curl -o $@ https://raw.githubusercontent.com/philsquared/Catch/v1.3.3/single_include/catch.hpp
 
-bootstrap/test/%.cpp: bootstrap/test/catch.h
+bootstrap/test/astnode.cpp: bootstrap/test/catch.h
+bootstrap/test/evaluator.cpp: bootstrap/test/catch.h
+bootstrap/test/parser.cpp: bootstrap/test/catch.h
+bootstrap/test/runner.cpp: bootstrap/test/catch.h
 
 bootstrap/test/test: bootstrap/test/test.cpp \
 	bootstrap/test/astnode.o \

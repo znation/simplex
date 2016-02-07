@@ -185,16 +185,19 @@ ASTNode ASTNode::parseIdentifier(ASTInput& input) {
   if (input.size() == 0) {
     throw ParseError(kind, "any valid identifier", "EOF");
   }
+  char next = input.peek();
+  if (next == '\'') {
+    throw ParseError(kind, "non-whitespace character other than '\\'', '(' and ')'", next);
+  }
   std::stringstream ss;
   while (input.size() != 0) {
-    char next = input.peek();
+    next = input.peek();
     if (isWhitespace(next) ||
         next == ')') {
       break;
     }
-    if (next == '(' ||
-        next == '\'') {
-      throw ParseError(kind, "non-whitespace characters other than '(' and '\\''", next);
+    if (next == '(') {
+      throw ParseError(kind, "non-whitespace character other than '('", next);
     }
     ss << next;
     input.next();
