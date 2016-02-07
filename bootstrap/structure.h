@@ -10,13 +10,13 @@
 namespace simplex {
   enum class StructureKind {
     boolean,
+    byte,
     cons,
+    floatingPoint,
     function,
     integer,
     invalid,
-    floatingPoint,
-    nil,
-    string
+    nil
   };
 
   const char* StructureKindName(StructureKind kind);
@@ -33,17 +33,22 @@ namespace simplex {
         int64_t m_int;
         double m_float;
         bool m_bool;
+        uint8_t m_byte;
       };
       std::string m_string;
       Function m_function;
 
+      void cons_from_string(const char * str, size_t len);
+
     public:
       Structure();
       explicit Structure(bool);
+      explicit Structure(uint8_t);
       explicit Structure(int64_t);
       explicit Structure(double);
       explicit Structure(const std::string& s);
       explicit Structure(Function fn);
+      Structure(const char * str, size_t len);
       Structure(std::shared_ptr<Structure>&& car, std::shared_ptr<Structure>&& cdr);
       static Structure Nil();
 
@@ -54,9 +59,9 @@ namespace simplex {
       // accessors
       StructureKind kind() const;
       bool boolean() const;
+      uint8_t byte() const;
       int64_t integer() const;
       double floatingPoint() const;
-      std::string string() const;
       const Structure& car() const;
       const Structure& cdr() const;
 

@@ -8,10 +8,17 @@ using namespace simplex;
 
 Structure::Structure() : m_kind(StructureKind::invalid) { }
 Structure::Structure(bool b) : m_kind(StructureKind::boolean), m_bool(b) { }
+Structure::Structure(uint8_t b) : m_kind(StructureKind::byte), m_byte(b) { }
 Structure::Structure(int64_t i) : m_kind(StructureKind::integer), m_int(i) { }
 Structure::Structure(double d) : m_kind(StructureKind::floatingPoint), m_float(d) { }
-Structure::Structure(const std::string& s) :
-  m_kind(StructureKind::string), m_string(s) { }
+Structure::Structure(const char * str, size_t len) : m_kind(StructureKind::cons) {
+  this->cons_from_string(str, len);
+}
+Structure::Structure(const std::string& s) : m_kind(StructureKind::cons) {
+  const char * str = s.c_str();
+  size_t len = s.size();
+  this->cons_from_string(str, len);
+}
 Structure::Structure(Function fn) :
   m_kind(StructureKind::function), m_function(fn) { }
 Structure::Structure(std::shared_ptr<Structure>&& car, std::shared_ptr<Structure>&& cdr) :
@@ -26,6 +33,8 @@ const char * simplex::StructureKindName(StructureKind kind) {
   switch (kind) {
     case StructureKind::boolean:
       return "boolean";
+    case StructureKind::byte:
+      return "byte";
     case StructureKind::cons:
       return "cons";
     case StructureKind::function:
@@ -38,8 +47,6 @@ const char * simplex::StructureKindName(StructureKind kind) {
       return "floatingPoint";
     case StructureKind::nil:
       return "nil";
-    case StructureKind::string:
-      return "string";
   }
 }
 
@@ -55,6 +62,8 @@ bool Structure::operator==(const Structure& s) const {
   switch (m_kind) {
     case StructureKind::boolean:
       return m_bool == s.boolean();
+    case StructureKind::byte:
+      return m_byte == s.byte();
     case StructureKind::cons:
       return (*m_car == *(s.m_car)) &&
              (*m_cdr == *(s.m_cdr));
@@ -65,11 +74,11 @@ bool Structure::operator==(const Structure& s) const {
     case StructureKind::integer:
       return m_int == s.m_int;
     case StructureKind::invalid:
-      throw "not implemented";
+      // not implemented
+      assert(false);
+      break;
     case StructureKind::nil:
       return true; // TODO should this be false?
-    case StructureKind::string:
-      return m_string == s.m_string;
   }
 }
 
@@ -93,8 +102,20 @@ bool Structure::operator==(bool b) const {
 }
 
 bool Structure::operator==(const char * str) const {
-  return m_kind == StructureKind::string &&
-         m_string == str;
+  if (m_kind != StructureKind::cons) {
+    return false;
+  }
+  size_t len = std::strlen(str);
+  if (len == 0) {
+    return m_car->m_kind == StructureKind::nil;
+  }
+  if (m_car->m_kind != StructureKind::byte) {
+    return false;
+  }
+  if (m_car->m_byte != str[0]) {
+    return false;
+  }
+  return *m_cdr == &str[1];
 }
 
 // operators
@@ -116,6 +137,11 @@ bool Structure::boolean() const {
   return m_bool;
 }
 
+uint8_t Structure::byte() const {
+  assert(m_kind == StructureKind::byte);
+  return m_byte;
+}
+
 double Structure::floatingPoint() const {
   assert(m_kind == StructureKind::floatingPoint);
   return m_float;
@@ -126,34 +152,38 @@ int64_t Structure::integer() const {
   return m_int;
 }
 
-std::string Structure::string() const {
-  assert(m_kind == StructureKind::string);
-  return m_string;
-}
-
 std::string Structure::to_string() const {
   std::stringstream ss;
   switch (m_kind) {
     case StructureKind::boolean:
       ss << m_bool;
       break;
+    case StructureKind::byte:
+      ss << m_byte;
+      break;
     case StructureKind::cons:
-      throw "not implemented";
+      ss << "(cons ";
+      ss << *m_car;
+      ss << " ";
+      ss << *m_cdr;
+      ss << ")";
+      break;
     case StructureKind::function:
-      throw "not implemented";
+      // not implemented
+      assert(false);
+      break;
     case StructureKind::integer:
       ss << m_int;
       break;
     case StructureKind::invalid:
-      throw "not implemented";
+      // not implemented
+      assert(false);
+      break;
     case StructureKind::floatingPoint:
       ss << m_float;
       break;
     case StructureKind::nil:
       ss << "()";
-      break;
-    case StructureKind::string:
-      ss << m_string;
       break;
   }
   return ss.str();
@@ -169,4 +199,14 @@ const Structure& Structure::cdr() const {
 
 StructureKind Structure::kind() const {
   return m_kind;
+}
+
+void Structure::cons_from_string(const char * str, size_t len) {
+  assert(len != 0);
+  this->m_car = std::make_shared<Structure>(static_cast<uint8_t>(str[0]));
+  if (len == 1) {
+    this->m_cdr = std::make_shared<Structure>(Structure::Nil());
+  } else {
+    this->m_cdr = std::make_shared<Structure>(&str[1], len-1);
+  }
 }

@@ -69,10 +69,10 @@ TEST_CASE("cons") {
 
 TEST_CASE("conditionals") {
   Evaluator e;
-  CHECK(e.eval("(if true 'hello' 'world')") == "hello");
-  CHECK(e.eval("(if false 'hello' 'world')") == "world");
-  CHECK(e.eval("(cond false 'foo' true 'bar' false 'baz')") == "bar");
-  CHECK(e.eval("(cond false 'foo' false 'bar' true 'baz')") == "baz");
+  CHECK(e.eval("(if true 'hello' 'world')") == Structure(std::string("hello")));
+  CHECK(e.eval("(if false 'hello' 'world')") == Structure(std::string("world")));
+  CHECK(e.eval("(cond false 'foo' true 'bar' false 'baz')") == Structure(std::string("bar")));
+  CHECK(e.eval("(cond false 'foo' false 'bar' true 'baz')") == Structure(std::string("baz")));
   CHECK_THROWS_AS(e.eval("(cond false 'foo' false 'bar' false 'qux')"), RuntimeError);
   CHECK_THROWS_AS(e.eval("(cond false 'foo' 'bar' true 'baz' 'qux')"), TypeMismatchError);
 }

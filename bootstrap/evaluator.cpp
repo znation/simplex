@@ -184,10 +184,8 @@ Structure Evaluator::eval(const ASTNode& node) {
     case NodeKind::literal:
       return evalLiteral(node);
     default:
-      std::stringstream ss;
-      ss << "not implemented: ";
-      ss << NodeKindName(node.kind());
-      throw ss.str();
+      // not implemented
+      assert(false);
   }
 }
 

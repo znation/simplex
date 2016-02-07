@@ -44,13 +44,23 @@ See the [unit tests](test/evaluator.cpp) for some examples of simple programs/ex
 
 ## Semantics
 
+### Types
+
+`boolean` represents a single bit (0 or 1).
+`byte` represents an unsigned, 8-bit integer.
+`cons` represents a recursive structure: a `car` and `cdr`. Each can be any type.
+`floatingPoint` represents a 64-bit IEEE-754 floating point number.
+`function` represents a function.
+`integer` represents a signed, 64-bit integer.
+`nil` represents a lack of something; nothing. Usually the sentinel value at the end of a list.
+
 ### Built in identifiers (reserved words)
 
+#### Type Names
+
+All type names (listed above) are reserved words, though currently unused in the language.
+
 #### Values
-
-##### `nil`
-
-`nil` represents a lack of something; nothing. Usually the sentinel value at the end of a list.
 
 ##### `endl`
 
@@ -66,14 +76,26 @@ See the [unit tests](test/evaluator.cpp) for some examples of simple programs/ex
 
 `let` creates a named identifier in the current scope, and assigns it the result of an expression.
 
-##### `cons x y`, `car xs`, `cdr xs`, `list x y z etc.`
+##### `cons x y`, `car xs`, `cdr xs`, `list x y z etc.`, `len`
 
-`cons` constructs a pair of (x,y).
-`car` retrieves the first element of such a pair.
-`cdr` retrieves the second element of such a pair.
-`list` constructs a list of pairs like (x, (y, (z, etc.)))
+* `cons` constructs a pair of (x,y).
+* `car` retrieves the first element of such a pair.
+* `cdr` retrieves the second element of such a pair.
+* `list` constructs a list of pairs like (x, (y, (z, etc.)))
+* `len` returns the size of a `list`, as an `integer`.
+* Singly linked lists (as constructed via `list`) are represented as follows:
 
-See [wikipedia](https://en.wikipedia.org/wiki/Cons) for more details.
+```
+((list) = (cons nil nil))
+((list a) = (cons a nil))
+((list a b) = (cons a b))
+((list a b c) = (cons a (cons b c)))
+((list a b c d ) = (cons a (cons b (cons c d))))
+```
+
+And so on.
+
+Strings (including those created with string literals) are represented as singly-linked lists of bytes.
 
 #### Computation
 
@@ -108,6 +130,12 @@ If no conditional expression evaluates to true, errors.
 ##### `print expr1 expr2 ...`
 
 `print` prints variadic arguments to standard output.
+
+##### `read`
+
+`read` reads a single byte from standard input, and returns:
+* If standard input is closed (end of stream), `nil`.
+* If standard input yielded one byte, returns the read byte.
 
 #### Future (Roadmap)
 

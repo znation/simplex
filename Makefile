@@ -1,22 +1,33 @@
-.PHONY: test
+.PHONY: \
+	debug \
+	release \
+	test \
+
 
 CXXFLAGS=\
-	  -DDEBUG \
-		-g \
 		--std=c++14 \
-		-O0 \
 		-MMD \
 		-MP \
 		-Wall \
 		-Werror \
 
-SRCS=$(wildcard *.cpp) \
-		 $(wildcard test/*.cpp) \
+
+SRCS=$(wildcard bootstrap/*.cpp) \
+		 $(wildcard bootstrap/test/*.cpp) \
+
 
 OBJECTS=$(patsubst %.cpp,%.o,$(SRCS))
 DEPENDS=${OBJECTS:.o=.d}
 
-default: bootstrap/simplex
+default: debug
+
+debug: CXXFLAGS += -DDEBUG -g -O0
+debug: CCFLAGS += -DDEBUG -g -O0
+debug: bootstrap/simplex
+
+release: CXXFLAGS += -O3
+release: CCFLAGS += -O3
+release: bootstrap/simplex
 
 clean:
 	rm -f ${OBJECTS} ${DEPENDS}
@@ -34,6 +45,9 @@ bootstrap/simplex: bootstrap/simplex.cpp \
 	bootstrap/structure.o \
 	bootstrap/symboltable.o \
 
+
+test: CXXFLAGS += -DDEBUG -g -O0
+test: CCFLAGS += -DDEBUG -g -O0
 test: bootstrap/test/test
 	./bootstrap/test/test -d yes
 
@@ -56,5 +70,6 @@ bootstrap/test/test: bootstrap/test/test.cpp \
 	bootstrap/stdlib.o \
 	bootstrap/structure.o \
 	bootstrap/symboltable.o \
+
 
 -include ${DEPENDS}
