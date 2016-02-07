@@ -58,12 +58,14 @@ bootstrap/test/astnode.cpp: bootstrap/test/catch.h
 bootstrap/test/evaluator.cpp: bootstrap/test/catch.h
 bootstrap/test/parser.cpp: bootstrap/test/catch.h
 bootstrap/test/runner.cpp: bootstrap/test/catch.h
+bootstrap/test/stdlib.cpp: bootstrap/test/catch.h
 
 bootstrap/test/test: bootstrap/test/test.cpp \
 	bootstrap/test/astnode.o \
 	bootstrap/test/evaluator.o \
 	bootstrap/test/parser.o \
 	bootstrap/test/runner.o \
+	bootstrap/test/stdlib.o \
 	bootstrap/astinput.o \
 	bootstrap/astnode.o \
 	bootstrap/errors.o \
@@ -74,5 +76,8 @@ bootstrap/test/test: bootstrap/test/test.cpp \
 	bootstrap/structure.o \
 	bootstrap/symboltable.o \
 
+
+bootstrap/simplex_stdlib.h: stdlib.simplex
+	xxd -i $< > $@
 
 -include ${DEPENDS}

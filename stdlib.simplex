@@ -1,0 +1,7 @@
+(let append
+  (lambda ls1 ls2
+    (cond (= nil ls1) ls2
+          (= nil (car ls1)) ls2
+          (= nil ls2) ls1
+          (= nil (car ls2)) ls1
+          true (cons (car ls1) (append (cdr ls1) ls2)))))

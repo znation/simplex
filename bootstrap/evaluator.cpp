@@ -2,6 +2,7 @@
 #include "evaluator.h"
 #include "parser.h"
 #include "stdlib.h"
+#include "simplex_stdlib.h"
 
 #include <cassert>
 #include <sstream>
@@ -10,7 +11,12 @@ using namespace simplex;
 
 Evaluator::Evaluator(std::istream& input, std::ostream& output)
  : m_symbols(input, output) {
+  // C++-native parts of the standard library
   stdlib::addSymbols(m_symbols);
+
+  // Simplex stdlib (written in simplex)
+  std::string simplexLib(reinterpret_cast<char *>(stdlib_simplex), stdlib_simplex_len);
+  this->eval(simplexLib);
 }
 
 Evaluator::Evaluator(const SymbolTable& symbols) : m_symbols(symbols) {}
@@ -61,7 +67,8 @@ Structure Evaluator::evalProgram(const ASTNode& node) {
 static std::unordered_map<std::string, Structure> dictOfParams(const std::vector<ASTNode>& parameterList, std::vector<Structure> parameterValues) {
   std::unordered_map<std::string, Structure> ret;
   size_t nParams = parameterList.size() - 1;
-  assert(nParams == parameterValues.size());
+  size_t nValues = parameterValues.size();
+  assert(nParams == nValues);
   for (size_t i=0; i<nParams; i++) {
     const auto& param = parameterList[i];
     assert(param.kind() == NodeKind::identifier);
@@ -95,7 +102,9 @@ Structure Evaluator::evalCondExpression(const ASTNode& node) {
          children[0].string() == "cond");
   assert(children[1].kind() == NodeKind::optionalParameterList);
   const auto parameters = children[1].children()[0].children();
-  assert(parameters.size() % 2 == 0); // must be even number
+  if (parameters.size() % 2 != 0) {
+    throw RuntimeError("cond must take an even number of parameters (pairs of condition and expression)");
+  }
   for (size_t i=0; i<parameters.size(); i+=2) {
     const auto condition = this->eval(parameters[i]);
     if (condition) {

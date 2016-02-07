@@ -129,8 +129,12 @@ static Structure cdr(std::vector<Structure> params) {
 
 static Structure list_impl(const std::vector<Structure>& params, size_t idx) {
   size_t size = params.size() - idx;
-  assert(size >= 1);
-  if (size == 1) {
+  if (size == 0) {
+    return Structure(
+      std::make_shared<Structure>(Structure::Nil()),
+      std::make_shared<Structure>(Structure::Nil())
+    );
+  } else if (size == 1) {
     return Structure(
       std::make_shared<Structure>(params[idx]),
       std::make_shared<Structure>(Structure::Nil())
