@@ -30,10 +30,9 @@
     (let readLine' (lambda acc
       (sequence
         (let next (read))
-        (print 'got char: ' (string next) endl)
         (cond (= next nil) acc
               (= next (car endl)) acc
               (= (car acc) nil) (readLine' (cons next nil))
-              (= (cdr acc) nil) (readLine' (cons next (car acc)))
+              (= (cdr acc) nil) (readLine' (list next (car acc)))
               true (readLine' (cons next acc))))))
     (reverse (readLine' '')))))

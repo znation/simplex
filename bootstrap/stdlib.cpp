@@ -152,6 +152,9 @@ static Structure cons(std::vector<Structure> params) {
 static Structure car(std::vector<Structure> params) {
   assert(params.size() == 1);
   const auto& cons = params[0];
+  if (cons.kind() != StructureKind::cons) {
+    throw TypeMismatchError(StructureKind::cons, cons.kind());
+  }
   assert(cons.kind() == StructureKind::cons);
   const auto ret = cons.car();
   return ret;

@@ -28,6 +28,9 @@ TEST_CASE("operators [stdlib]") {
 
 TEST_CASE("len") {
   Evaluator e;
+  CHECK(e.eval("(len (list))") == 0);
+  CHECK(e.eval("(len (list 1))") == 1);
+  CHECK(e.eval("(len (list 1 2))") == 2);
   CHECK(e.eval("(len (list 1 2 3))") == 3);
 }
 
@@ -37,12 +40,18 @@ TEST_CASE("reverse") {
   CHECK(e.eval("(reverse (list 1))") == e.eval("(list 1)"));
   CHECK(e.eval("(reverse (list 1 2))") == e.eval("(list 2 1)"));
   CHECK(e.eval("(reverse (list 1 2 3))") == e.eval("(list 3 2 1)"));
+  CHECK(e.eval("(reverse '')") == e.eval("''"));
+  CHECK(e.eval("(reverse 'a')") == e.eval("'a'"));
+  CHECK(e.eval("(reverse 'ab')") == e.eval("'ba'"));
+  CHECK(e.eval("(reverse 'hello')") == e.eval("'olleh'"));
 }
 
 TEST_CASE("readLine") {
   std::stringstream input;
   Evaluator e(input, std::cout);
-  input << "a\nb";
-  CHECK(e.eval("(readLine)") == e.eval("(string 'a')"));
-  CHECK(e.eval("(readLine)") == e.eval("(string 'b')"));
+  input << "a\nb\n+ 3 4\n- 5 6";
+  CHECK(e.eval("(readLine)") == e.eval("'a'"));
+  CHECK(e.eval("(readLine)") == e.eval("'b'"));
+  CHECK(e.eval("(readLine)") == e.eval("'+ 3 4'"));
+  CHECK(e.eval("(readLine)") == e.eval("'- 5 6'"));
 }
