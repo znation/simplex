@@ -225,11 +225,15 @@ StructureKind Structure::kind() const {
 }
 
 void Structure::cons_from_string(const char * str, size_t len) {
-  assert(len != 0);
-  this->m_car = std::make_shared<Structure>(static_cast<uint8_t>(str[0]));
-  if (len == 1) {
+  if (len == 0) {
+    this->m_car = std::make_shared<Structure>(Structure::Nil());
     this->m_cdr = std::make_shared<Structure>(Structure::Nil());
   } else {
-    this->m_cdr = std::make_shared<Structure>(&str[1], len-1);
+    this->m_car = std::make_shared<Structure>(static_cast<uint8_t>(str[0]));
+    if (len == 1) {
+      this->m_cdr = std::make_shared<Structure>(Structure::Nil());
+    } else {
+      this->m_cdr = std::make_shared<Structure>(&str[1], len-1);
+    }
   }
 }

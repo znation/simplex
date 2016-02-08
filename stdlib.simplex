@@ -1,7 +1,39 @@
-(let append
-  (lambda ls1 ls2
-    (cond (= nil ls1) ls2
-          (= nil (car ls1)) ls2
-          (= nil ls2) ls1
-          (= nil (car ls2)) ls1
-          true (cons (car ls1) (append (cdr ls1) ls2)))))
+(let <= (lambda x y
+  (cond (= x y) true
+        (< x y) true
+        true false)))
+
+(let >= (lambda x y
+  (cond (= x y) true
+        (> x y) true
+        true false)))
+
+(let append (lambda ls1 ls2
+  (cond (= nil ls1) ls2
+        (= nil (car ls1)) ls2
+        (= nil ls2) ls1
+        (= nil (car ls2)) ls1
+        true (cons (car ls1) (append (cdr ls1) ls2)))))
+
+(let len (lambda xs
+  (cond (= (car xs) nil) 0
+        (= (cdr xs) nil) 1
+        true (+ 1 (len (cdr xs))))))
+
+(let reverse (lambda xs
+  (if (<= (len xs) 1)
+      xs
+      (append (reverse (cdr xs)) (list (car xs))))))
+
+(let readLine (lambda
+  (sequence
+    (let readLine' (lambda acc
+      (sequence
+        (let next (read))
+        (print 'got char: ' (string next) endl)
+        (cond (= next nil) acc
+              (= next (car endl)) acc
+              (= (car acc) nil) (readLine' (cons next nil))
+              (= (cdr acc) nil) (readLine' (cons next (car acc)))
+              true (readLine' (cons next acc))))))
+    (reverse (readLine' '')))))

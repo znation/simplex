@@ -3,19 +3,9 @@
 #include "../errors.h"
 
 #include "catch.h"
+#include "macros.h"
 
 using namespace simplex;
-
-#define STR(s) #s
-#define CHECK_MATH_1(op, p, result) \
-  CHECK(e.eval(STR((op p))) == result); \
-  CHECK(e.eval(STR((= (op p) result))) == true); \
-
-
-#define CHECK_MATH_2(op, p1, p2, result) \
-  CHECK(e.eval(STR((op p1 p2))) == result); \
-  CHECK(e.eval(STR((= (op p1 p2) result))) == true); \
-
 
 TEST_CASE("math [evaluator]") {
   Evaluator e;
@@ -33,6 +23,17 @@ TEST_CASE("math [evaluator]") {
   CHECK_MATH_2(/, (- 58), 3, (- 19));
   CHECK_MATH_2(/, (- 1.5), 2, (- 0.75));
   CHECK_MATH_2(/, 0.5, 2.0, 0.25);
+}
+
+TEST_CASE("comparison [evaluator]") {
+  Evaluator e;
+  CHECK_MATH_2(=, 3, 3, true);
+  CHECK_MATH_2(<, 2, 3, true);
+  CHECK_MATH_2(<, 3, 3, false);
+  CHECK_MATH_2(<, 4, 3, false);
+  CHECK_MATH_2(>, 2, 3, false);
+  CHECK_MATH_2(>, 3, 3, false);
+  CHECK_MATH_2(>, 4, 3, true);
 }
 
 TEST_CASE("lambda [evaluator]") {
@@ -84,6 +85,7 @@ TEST_CASE("conversion") {
   CHECK(e.eval("(string 'abc')") == Structure(std::string("abc")));
   CHECK(e.eval("(string (cons 1 2))") == Structure(std::string("(cons 1 2)")));
   CHECK(e.eval("(string 3.842)") == Structure(std::string("3.842")));
+  CHECK(e.eval("(car '\n')") == Structure(static_cast<uint8_t>('\n')));
 }
 
 TEST_CASE("i/o") {

@@ -97,6 +97,42 @@ static Structure equals(std::vector<Structure> params) {
   return Structure(ret);
 }
 
+static Structure lessthan(std::vector<Structure> params) {
+  size_t paramsSize = params.size();
+  assert(paramsSize == 2);
+  const auto& reference = params[0];
+  const auto& compare = params[1];
+  if (reference.kind() != compare.kind()) {
+    throw TypeMismatchError(reference.kind(), compare.kind());
+  }
+  switch (reference.kind()) {
+    case StructureKind::integer:
+      return Structure(reference.integer() < compare.integer());
+    case StructureKind::floatingPoint:
+      return Structure(reference.floatingPoint() < compare.floatingPoint());
+    default:
+      throw TypeMismatchError(StructureKind::integer, reference.kind());
+  }
+}
+
+static Structure greaterthan(std::vector<Structure> params) {
+  size_t paramsSize = params.size();
+  assert(paramsSize == 2);
+  const auto& reference = params[0];
+  const auto& compare = params[1];
+  if (reference.kind() != compare.kind()) {
+    throw TypeMismatchError(reference.kind(), compare.kind());
+  }
+  switch (reference.kind()) {
+    case StructureKind::integer:
+      return Structure(reference.integer() > compare.integer());
+    case StructureKind::floatingPoint:
+      return Structure(reference.floatingPoint() > compare.floatingPoint());
+    default:
+      throw TypeMismatchError(StructureKind::integer, reference.kind());
+  }
+}
+
 static Structure sequence(std::vector<Structure> params) {
   // rely on the interpreter itself being sequential (single threaded)
   // simply return the last accumulated result
@@ -117,14 +153,16 @@ static Structure car(std::vector<Structure> params) {
   assert(params.size() == 1);
   const auto& cons = params[0];
   assert(cons.kind() == StructureKind::cons);
-  return cons.car();
+  const auto ret = cons.car();
+  return ret;
 }
 
 static Structure cdr(std::vector<Structure> params) {
   assert(params.size() == 1);
   const auto& cons = params[0];
   assert(cons.kind() == StructureKind::cons);
-  return cons.cdr();
+  const auto ret = cons.cdr();
+  return ret;
 }
 
 static Structure list_impl(const std::vector<Structure>& params, size_t idx) {
@@ -199,6 +237,8 @@ void stdlib::addSymbols(SymbolTable& symbols) {
   symbols["*"] = Structure(static_cast<Structure::Function>(times));
   symbols["/"] = Structure(static_cast<Structure::Function>(divide));
   symbols["="] = Structure(static_cast<Structure::Function>(equals));
+  symbols["<"] = Structure(static_cast<Structure::Function>(lessthan));
+  symbols[">"] = Structure(static_cast<Structure::Function>(greaterthan));
 
   // control flow
   symbols["sequence"] = Structure(static_cast<Structure::Function>(sequence));
