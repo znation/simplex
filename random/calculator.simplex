@@ -1,0 +1,13 @@
+(sequence
+  (let calc (lambda input
+    (print input endl)))
+  (let repl (lambda
+    (sequence
+      (print '> ')
+      (let input (readLine))
+      (if (= 0 (len input))
+          true
+          (sequence
+            (calc input)
+            (repl))))))
+  (repl))
