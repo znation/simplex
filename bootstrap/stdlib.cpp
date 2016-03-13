@@ -192,6 +192,44 @@ static Structure list(std::vector<Structure> params) {
   return list_impl(params, 0);
 }
 
+static Structure dict(std::vector<Structure> params) {
+  size_t size = params.size();
+
+  if (size % 2 != 0) {
+    throw RuntimeError("expected an even number of parameters to `dict`");
+  }
+
+  Structure::Dict result;
+  for (size_t i=0; i<size; i+=2) {
+    auto key = params[i].string();
+    auto value = params[i+1];
+    result.insert(
+      std::make_pair<std::string, Structure>(std::move(key), std::move(value))
+    );
+  }
+  return Structure(result);
+}
+
+static Structure dict_get(std::vector<Structure> params) {
+  if (params.size() != 2) {
+    throw RuntimeError("expected 2 parameters to `dict.get`");
+  }
+  const auto& key = params[0].string();
+  const auto& dict = params[1].dict();
+  return dict.at(key);
+}
+
+static Structure dict_set(std::vector<Structure> params) {
+  if (params.size() != 3) {
+    throw RuntimeError("expected 3 parameters to `dict.get`");
+  }
+  const std::string& key = params[0].string();
+  const Structure& value = params[1];
+  Structure::Dict dict(params[2].dict()); // copy
+  dict[key] = value;
+  return Structure(dict);
+}
+
 static Structure::Function print(SymbolTable& symbols) {
   return [&symbols](std::vector<Structure> params) {
     for (const auto& param : params) {
@@ -251,6 +289,10 @@ void stdlib::addSymbols(SymbolTable& symbols) {
   symbols["car"] = Structure(static_cast<Structure::Function>(car));
   symbols["cdr"] = Structure(static_cast<Structure::Function>(cdr));
   symbols["list"] = Structure(static_cast<Structure::Function>(list));
+
+  symbols["dict"] = Structure(static_cast<Structure::Function>(dict));
+  symbols["dict.get"] = Structure(static_cast<Structure::Function>(dict_get));
+  symbols["dict.set"] = Structure(static_cast<Structure::Function>(dict_set));
 
   // values
   const static std::string endl("\n");

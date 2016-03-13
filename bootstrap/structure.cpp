@@ -23,6 +23,9 @@ Structure::Structure(Function fn) :
   m_kind(StructureKind::function), m_function(fn) { }
 Structure::Structure(std::shared_ptr<Structure>&& car, std::shared_ptr<Structure>&& cdr) :
   m_kind(StructureKind::cons), m_car(std::move(car)), m_cdr(std::move(cdr)) { }
+Structure::Structure(Dict dict) :
+  m_kind(StructureKind::dict), m_dict(dict) { }
+
 Structure Structure::Nil() {
   Structure ret;
   ret.m_kind = StructureKind::nil;
@@ -37,6 +40,8 @@ const char * simplex::StructureKindName(StructureKind kind) {
       return "byte";
     case StructureKind::cons:
       return "cons";
+    case StructureKind::dict:
+      return "dict";
     case StructureKind::function:
       return "function";
     case StructureKind::integer:
@@ -86,6 +91,8 @@ bool Structure::operator==(const Structure& s) const {
     case StructureKind::cons:
       return (*m_car == *(s.m_car)) &&
              (*m_cdr == *(s.m_cdr));
+    case StructureKind::dict:
+      return m_dict == s.m_dict;
     case StructureKind::floatingPoint:
       return m_float == s.m_float;
     case StructureKind::function:
@@ -171,6 +178,31 @@ int64_t Structure::integer() const {
   return m_int;
 }
 
+static void cons_to_string(const Structure& s, std::stringstream& out) {
+  const Structure& car = s.car();
+  const Structure& cdr = s.cdr();
+  if (car.kind() == StructureKind::nil) {
+    return;
+  }
+  out << car;
+  if (cdr.kind() == StructureKind::nil) {
+    return;
+  }
+  cons_to_string(cdr, out);
+}
+
+std::string Structure::string() const {
+  assert(m_kind == StructureKind::cons);
+  std::stringstream buffer;
+  cons_to_string(*this, buffer);
+  return buffer.str();
+}
+
+const Structure::Dict& Structure::dict() const {
+  assert(m_kind == StructureKind::dict);
+  return m_dict;
+}
+
 std::string Structure::to_string() const {
   std::stringstream ss;
   switch (m_kind) {
@@ -190,6 +222,19 @@ std::string Structure::to_string() const {
       ss << " ";
       ss << *m_cdr;
       ss << ")";
+      break;
+    case StructureKind::dict:
+      {
+        ss << "(dict ";
+        for (const auto& it : m_dict) {
+          ss << std::endl;
+          ss << "    '";
+          ss << it.first;
+          ss << "' ";
+          ss << it.second.to_string();
+        }
+        ss << ")";
+      }
       break;
     case StructureKind::function:
       // not implemented

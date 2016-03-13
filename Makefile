@@ -54,6 +54,8 @@ test: bootstrap/test/test
 bootstrap/test/catch.h:
 	curl -o $@ https://raw.githubusercontent.com/philsquared/Catch/v1.3.3/single_include/catch.hpp
 
+# extra dependencies
+bootstrap/evaluator.cpp: bootstrap/simplex_stdlib.h
 bootstrap/test/astnode.cpp: bootstrap/test/catch.h
 bootstrap/test/evaluator.cpp: bootstrap/test/catch.h
 bootstrap/test/parser.cpp: bootstrap/test/catch.h
@@ -66,6 +68,7 @@ bootstrap/test/test: bootstrap/test/test.cpp \
 	bootstrap/test/parser.o \
 	bootstrap/test/runner.o \
 	bootstrap/test/stdlib.o \
+	bootstrap/test/structure.o \
 	bootstrap/astinput.o \
 	bootstrap/astnode.o \
 	bootstrap/errors.o \

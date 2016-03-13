@@ -5,6 +5,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace simplex {
@@ -12,11 +13,12 @@ namespace simplex {
     boolean,
     byte,
     cons,
+    dict,
     floatingPoint,
     function,
     integer,
     invalid,
-    nil
+    nil,
   };
 
   const char* StructureKindName(StructureKind kind);
@@ -24,6 +26,7 @@ namespace simplex {
   class Structure {
     public:
       typedef std::function<Structure(std::vector<Structure>)> Function;
+      typedef std::unordered_map<std::string, Structure> Dict;
 
     private:
       StructureKind m_kind;
@@ -35,8 +38,8 @@ namespace simplex {
         bool m_bool;
         uint8_t m_byte;
       };
-      std::string m_string;
       Function m_function;
+      Dict m_dict;
 
       void cons_from_string(const char * str, size_t len);
 
@@ -48,6 +51,7 @@ namespace simplex {
       explicit Structure(double);
       explicit Structure(const std::string& s);
       explicit Structure(Function fn);
+      explicit Structure(Dict dict);
       Structure(const char * str, size_t len);
       Structure(std::shared_ptr<Structure>&& car, std::shared_ptr<Structure>&& cdr);
       static Structure Nil();
@@ -64,6 +68,8 @@ namespace simplex {
       double floatingPoint() const;
       const Structure& car() const;
       const Structure& cdr() const;
+      std::string string() const;
+      const Dict& dict() const;
 
       // comparison
       bool operator==(const Structure&) const;

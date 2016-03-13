@@ -68,6 +68,19 @@ TEST_CASE("cons") {
   CHECK(e.eval("(= (list 1 2 3) (cons 1 (cons 2 (cons 3 nil))))") == true);
 }
 
+TEST_CASE("dict") {
+  Evaluator e;
+  CHECK(e.eval("(dict.get 'x' (dict 'x' 3 'y' 4))") == 3);
+  CHECK(e.eval("(dict.get 'y' (dict 'x' 3 'y' 4))") == 4);
+  CHECK(e.eval("(dict.set 'x' 4 (dict 'x' 3))") == Structure(Structure::Dict({
+    {"x", Structure(static_cast<int64_t>(4))}
+  })));
+  CHECK(e.eval("(dict.set 'x' 4 (dict 'y' 3))") == Structure(Structure::Dict({
+    {"x", Structure(static_cast<int64_t>(4))},
+    {"y", Structure(static_cast<int64_t>(3))}
+  })));
+}
+
 TEST_CASE("conditionals") {
   Evaluator e;
   CHECK(e.eval("(if true 'hello' 'world')") == Structure(std::string("hello")));
