@@ -1,6 +1,22 @@
 (sequence
-  (let calc (lambda input
-    (print input endl)))
+  (let tokenize
+    (lambda input
+      (sequence
+        (let tokenize'
+          (lambda input current tokens
+            (if
+              (= input nil) (append tokens (list current))
+              (sequence
+                (let next (car input))
+                (let rest (cdr input))
+                (cond
+                  (= next nil) (assert false)
+                  (= next (car ' ')) (tokenize' rest '' (append tokens (list current)))
+                  true (tokenize' rest (append current (list next)) tokens))))))
+        (tokenize' input '' (list)))))
+  (let calc
+    (lambda input
+      (map (lambda x (print x endl)) (tokenize input))))
   (let repl (lambda
     (sequence
       (print '> ')

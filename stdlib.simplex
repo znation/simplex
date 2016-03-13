@@ -20,10 +20,10 @@
         (= (cdr xs) nil) 1
         true (+ 1 (len (cdr xs))))))
 
-(let reverse (lambda xs
-  (if (<= (len xs) 1)
-      xs
-      (append (reverse (cdr xs)) (list (car xs))))))
+(let map
+  (lambda fn xs
+    (cond (= xs nil) nil
+          true (cons (fn (car xs)) (map fn (cdr xs))))))
 
 (let readLine (lambda
   (sequence
@@ -36,3 +36,8 @@
               (= (cdr acc) nil) (readLine' (list next (car acc)))
               true (readLine' (cons next acc))))))
     (reverse (readLine' '')))))
+
+(let reverse (lambda xs
+  (if (<= (len xs) 1)
+      xs
+      (append (reverse (cdr xs)) (list (car xs))))))
