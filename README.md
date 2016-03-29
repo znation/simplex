@@ -101,7 +101,7 @@ Strings (including those created with string literals) are represented as singly
 
 ##### `+`, `-`, `/`, `*`, `=`
 
-Mathematical operators and (type-safe!) equality operator.
+Mathematical operators and equality operator.
 
 #### Control Flow
 
