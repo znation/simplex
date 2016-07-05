@@ -36,7 +36,7 @@
 
 (let calc
   (lambda input
-    (map (lambda x (print x endl)) (parse (lex input)))))
+    (map (lambda x (print x endl)) (parse (debugPrint (lex input))))))
 (let repl (lambda
   (sequence
     (print '> ')

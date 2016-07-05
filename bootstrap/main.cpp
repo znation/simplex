@@ -10,6 +10,9 @@
 
 using namespace simplex;
 
+const char *DASHES =
+"--------------------------------------------------------------------------------";
+
 template<typename T>
 int evaluate(T& src) {
   Evaluator e;
@@ -17,10 +20,10 @@ int evaluate(T& src) {
     e.eval(src);
     return 0;
   } catch (const Error& e) {
-    std::cerr << "----------------------------------------------" << std::endl;
+    std::cerr << DASHES << std::endl;
     std::cerr << "Unhandled exception!" << std::endl << std::endl;
     std::cerr << e.what() << std::endl;
-    std::cerr << "----------------------------------------------" << std::endl;
+    std::cerr << DASHES << std::endl;
     return 1;
   }
 }

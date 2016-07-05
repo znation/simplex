@@ -41,3 +41,13 @@
   (if (<= (len xs) 1)
       xs
       (append (reverse (cdr xs)) (list (car xs))))))
+
+(let debugPrint
+  (lambda x
+    (sequence
+      (print '
+---DEBUG------------------------------------------------------------------------
+' (string x) '
+---END DEBUG--------------------------------------------------------------------
+')
+      x)))
