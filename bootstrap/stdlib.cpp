@@ -28,7 +28,7 @@ static Structure unaryMinus(Structure n) {
   }
 }
 
-static Structure plus(std::vector<Structure> params) {
+static Structure plus(const ASTNode& node, std::vector<Structure> params) {
   if (params.size() == 1) {
     return unaryPlus(params[0]);
   }
@@ -40,7 +40,7 @@ static Structure plus(std::vector<Structure> params) {
   return Structure(extractFloat(params[0]) + extractFloat(params[1]));
 }
 
-static Structure minus(std::vector<Structure> params) {
+static Structure minus(const ASTNode& node, std::vector<Structure> params) {
   if (params.size() == 1) {
     return unaryMinus(params[0]);
   }
@@ -52,7 +52,7 @@ static Structure minus(std::vector<Structure> params) {
   return Structure(extractFloat(params[0]) - extractFloat(params[1]));
 }
 
-static Structure times(std::vector<Structure> params) {
+static Structure times(const ASTNode& node, std::vector<Structure> params) {
   assert(params.size() >= 1);
   bool allInteger = true;
   for (const Structure& param : params) {
@@ -75,7 +75,7 @@ static Structure times(std::vector<Structure> params) {
   }
 }
 
-static Structure divide(std::vector<Structure> params) {
+static Structure divide(const ASTNode& node, std::vector<Structure> params) {
   assert(params.size() == 2);
   if (params[0].kind() == StructureKind::integer &&
       params[1].kind() == StructureKind::integer) {
@@ -85,7 +85,7 @@ static Structure divide(std::vector<Structure> params) {
   }
 }
 
-static Structure equals(std::vector<Structure> params) {
+static Structure equals(const ASTNode& node, std::vector<Structure> params) {
   size_t paramsSize = params.size();
   assert(paramsSize >= 2);
   const auto& reference = params[0];
@@ -97,13 +97,13 @@ static Structure equals(std::vector<Structure> params) {
   return Structure(ret);
 }
 
-static Structure lessthan(std::vector<Structure> params) {
+static Structure lessthan(const ASTNode& node, std::vector<Structure> params) {
   size_t paramsSize = params.size();
   assert(paramsSize == 2);
   const auto& reference = params[0];
   const auto& compare = params[1];
   if (reference.kind() != compare.kind()) {
-    throw TypeMismatchError(reference.kind(), compare.kind());
+    throw TypeMismatchError(node, reference.kind(), compare.kind());
   }
   switch (reference.kind()) {
     case StructureKind::integer:
@@ -111,17 +111,17 @@ static Structure lessthan(std::vector<Structure> params) {
     case StructureKind::floatingPoint:
       return Structure(reference.floatingPoint() < compare.floatingPoint());
     default:
-      throw TypeMismatchError(StructureKind::integer, reference.kind());
+      throw TypeMismatchError(node, StructureKind::integer, reference.kind());
   }
 }
 
-static Structure greaterthan(std::vector<Structure> params) {
+static Structure greaterthan(const ASTNode& node, std::vector<Structure> params) {
   size_t paramsSize = params.size();
   assert(paramsSize == 2);
   const auto& reference = params[0];
   const auto& compare = params[1];
   if (reference.kind() != compare.kind()) {
-    throw TypeMismatchError(reference.kind(), compare.kind());
+    throw TypeMismatchError(node, reference.kind(), compare.kind());
   }
   switch (reference.kind()) {
     case StructureKind::integer:
@@ -129,11 +129,11 @@ static Structure greaterthan(std::vector<Structure> params) {
     case StructureKind::floatingPoint:
       return Structure(reference.floatingPoint() > compare.floatingPoint());
     default:
-      throw TypeMismatchError(StructureKind::integer, reference.kind());
+      throw TypeMismatchError(node, StructureKind::integer, reference.kind());
   }
 }
 
-static Structure sequence(std::vector<Structure> params) {
+static Structure sequence(const ASTNode& node, std::vector<Structure> params) {
   // rely on the interpreter itself being sequential (single threaded)
   // simply return the last accumulated result
   size_t paramsSize = params.size();
@@ -141,7 +141,7 @@ static Structure sequence(std::vector<Structure> params) {
   return params[paramsSize-1];
 }
 
-static Structure cons(std::vector<Structure> params) {
+static Structure cons(const ASTNode& node, std::vector<Structure> params) {
   assert(params.size() == 2);
   return Structure(
       std::make_shared<Structure>(params[0]),
@@ -149,18 +149,18 @@ static Structure cons(std::vector<Structure> params) {
   );
 }
 
-static Structure car(std::vector<Structure> params) {
+static Structure car(const ASTNode& node, std::vector<Structure> params) {
   assert(params.size() == 1);
   const auto& cons = params[0];
   if (cons.kind() != StructureKind::cons) {
-    throw TypeMismatchError(StructureKind::cons, cons.kind());
+    throw TypeMismatchError(node, StructureKind::cons, cons.kind());
   }
   assert(cons.kind() == StructureKind::cons);
   const auto ret = cons.car();
   return ret;
 }
 
-static Structure cdr(std::vector<Structure> params) {
+static Structure cdr(const ASTNode& node, std::vector<Structure> params) {
   assert(params.size() == 1);
   const auto& cons = params[0];
   assert(cons.kind() == StructureKind::cons);
@@ -188,15 +188,15 @@ static Structure list_impl(const std::vector<Structure>& params, size_t idx) {
   }
 }
 
-static Structure list(std::vector<Structure> params) {
+static Structure list(const ASTNode& node, std::vector<Structure> params) {
   return list_impl(params, 0);
 }
 
-static Structure dict(std::vector<Structure> params) {
+static Structure dict(const ASTNode& node, std::vector<Structure> params) {
   size_t size = params.size();
 
   if (size % 2 != 0) {
-    throw RuntimeError("expected an even number of parameters to `dict`");
+    throw RuntimeError(node, "expected an even number of parameters to `dict`");
   }
 
   Structure::Dict result;
@@ -210,18 +210,18 @@ static Structure dict(std::vector<Structure> params) {
   return Structure(result);
 }
 
-static Structure dict_get(std::vector<Structure> params) {
+static Structure dict_get(const ASTNode& node, std::vector<Structure> params) {
   if (params.size() != 2) {
-    throw RuntimeError("expected 2 parameters to `dict.get`");
+    throw RuntimeError(node, "expected 2 parameters to `dict.get`");
   }
   const auto& key = params[0].string();
   const auto& dict = params[1].dict();
   return dict.at(key);
 }
 
-static Structure dict_set(std::vector<Structure> params) {
+static Structure dict_set(const ASTNode& node, std::vector<Structure> params) {
   if (params.size() != 3) {
-    throw RuntimeError("expected 3 parameters to `dict.get`");
+    throw RuntimeError(node, "expected 3 parameters to `dict.get`");
   }
   const std::string& key = params[0].string();
   const Structure& value = params[1];
@@ -231,7 +231,7 @@ static Structure dict_set(std::vector<Structure> params) {
 }
 
 static Structure::Function print(SymbolTable& symbols) {
-  return [&symbols](std::vector<Structure> params) {
+  return [&symbols](const ASTNode& node, std::vector<Structure> params) {
     for (const auto& param : params) {
       param.print(symbols.output);
     }
@@ -240,9 +240,9 @@ static Structure::Function print(SymbolTable& symbols) {
 }
 
 static Structure::Function read(SymbolTable& symbols) {
-  return [&symbols](std::vector<Structure> params) {
+  return [&symbols](const ASTNode& node, std::vector<Structure> params) {
     if (params.size() > 0) {
-      throw RuntimeError("too many parameters to `read`");
+      throw RuntimeError(node, "too many parameters to `read`");
     }
     char c;
     if (symbols.input.get(c)) {
@@ -252,12 +252,12 @@ static Structure::Function read(SymbolTable& symbols) {
   };
 }
 
-static Structure string(std::vector<Structure> params) {
+static Structure string(const ASTNode& node, std::vector<Structure> params) {
   if (params.size() == 0) {
-    throw RuntimeError("not enough parameters to `string`");
+    throw RuntimeError(node, "not enough parameters to `string`");
   }
   if (params.size() > 1) {
-    throw RuntimeError("too many parameters to `string`");
+    throw RuntimeError(node, "too many parameters to `string`");
   }
   const auto& param = params[0];
   try {

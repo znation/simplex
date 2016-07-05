@@ -1,29 +1,49 @@
-(sequence
-  (let tokenize
-    (lambda input
-      (sequence
-        (let tokenize'
-          (lambda input current tokens
-            (if
-              (= input nil) (append tokens (list current))
-              (sequence
-                (let next (car input))
-                (let rest (cdr input))
-                (cond
-                  (= next nil) (assert false)
-                  (= next (car ' ')) (tokenize' rest '' (append tokens (list current)))
-                  true (tokenize' rest (append current (list next)) tokens))))))
-        (tokenize' input '' (list)))))
-  (let calc
-    (lambda input
-      (map (lambda x (print x endl)) (tokenize input))))
-  (let repl (lambda
+(let expr
+  (lambda lhs op rhs
+    (cons op (cons lhs rhs))))
+(let expr.lhs
+  (lambda expr
+    (car (cdr expr))))
+(let expr.rhs
+  (lambda expr
+    (cdr (cdr expr))))
+
+(let parse*
+  (lambda tokens buf
     (sequence
-      (print '> ')
-      (let input (readLine))
-      (if (= 0 (len input))
-          true
-          (sequence
-            (calc input)
-            (repl))))))
-  (repl))
+      (let first (car tokens))
+      (if (= first (car '*')) (expr (parse/ buf) '*' (parse* (cdr tokens) ''))
+          (parse* (cdr tokens) (append buf first))))))
+(let parse
+  (lambda tokens
+    (parse* tokens '')))
+
+(let lex
+  (lambda input
+    (sequence
+      (let lex'
+        (lambda input current tokens
+          (if
+            (= input nil) (append tokens (list current))
+            (sequence
+              (let next (car input))
+              (let rest (cdr input))
+              (cond
+                (= next nil) (assert false)
+                (= next (car ' ')) (lex' rest '' (append tokens (list current)))
+                true (lex' rest (append current (list next)) tokens))))))
+      (lex' input '' (list)))))
+
+(let calc
+  (lambda input
+    (map (lambda x (print x endl)) (parse (lex input)))))
+(let repl (lambda
+  (sequence
+    (print '> ')
+    (let input (readLine))
+    (if (= 0 (len input))
+        true
+        (sequence
+          (calc input)
+          (repl))))))
+(repl)

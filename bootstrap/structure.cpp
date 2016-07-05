@@ -59,13 +59,13 @@ void Structure::print(std::ostream& stream) const {
   // should only be used on strings
   // otherwise, call to_string() first to get a string representation.
   if (this->kind() != StructureKind::cons) {
-    throw TypeMismatchError(StructureKind::cons, this->kind());
+    throw TypeMismatchError(ASTNode(), StructureKind::cons, this->kind());
   }
   const auto& car = this->car();
   const auto& cdr = this->cdr();
   if (car.kind() != StructureKind::nil) {
     if (car.kind() != StructureKind::byte) {
-      throw TypeMismatchError(StructureKind::byte, car.kind());
+      throw TypeMismatchError(ASTNode(), StructureKind::byte, car.kind());
     }
     stream << static_cast<char>(car.byte());
     if (cdr.kind() != StructureKind::nil) {
@@ -147,15 +147,15 @@ bool Structure::operator==(const char * str) const {
 // operators
 Structure::operator bool() const {
   if (m_kind != StructureKind::boolean) {
-    throw TypeMismatchError(StructureKind::boolean, m_kind);
+    throw TypeMismatchError(ASTNode(), StructureKind::boolean, m_kind);
   }
   assert(m_kind == StructureKind::boolean);
   return m_bool;
 }
 
-Structure Structure::operator()(std::vector<Structure> params) {
+Structure Structure::operator()(const ASTNode& node, std::vector<Structure> params) {
   assert(m_kind == StructureKind::function);
-  return m_function(params);
+  return m_function(node, params);
 }
 
 bool Structure::boolean() const {

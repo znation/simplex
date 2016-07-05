@@ -15,16 +15,16 @@ static void expect(NodeKind kind, ASTInput& input, const std::string& token) {
   size_t tokenSize = token.size();
   if (tokenSize > input.size()) {
     const auto remaining = input.remaining();
-    throw ParseError(kind, token.c_str(), remaining.c_str());
+    throw ParseError(kind, token.c_str(), remaining.c_str(), input.line(), input.col());
   }
   const std::string shouldBeToken(input.get(), tokenSize);
   if (shouldBeToken != token) {
-    throw ParseError(kind, token.c_str(), shouldBeToken.c_str());
+    throw ParseError(kind, token.c_str(), shouldBeToken.c_str(), input.line(), input.col());
   }
   input.advance(tokenSize);
 }
 
-ASTNode::ASTNode(NodeKind kind) : m_kind(kind) { }
+ASTNode::ASTNode(NodeKind kind, size_t line, size_t col) : m_kind(kind), m_line(line), m_col(col) { }
 
 void ASTNode::toString(std::stringstream& ss) const {
   static int indentLevel = 0;
@@ -53,13 +53,17 @@ std::ostream& simplex::operator<<(std::ostream& stream, const ASTNode& node) {
   return stream;
 }
 
-ASTNode ASTNode::parseProgram(const char *inputStream, size_t len) {
-  ASTInput input(inputStream, len);
+ASTNode ASTNode::parseProgram(
+  const std::string& filename,
+  const char *inputStream,
+  size_t len
+) {
+  ASTInput input(filename, inputStream, len);
   return parseProgram(input);
 }
 
 ASTNode ASTNode::parseProgram(ASTInput& input) {
-  auto ret = ASTNode(NodeKind::program);
+  auto ret = ASTNode(NodeKind::program, input.line(), input.col());
   ret.m_children.push_back(parseExpression(input));
   if (input.size() > 0) {
     ret.m_children.push_back(parseProgram(input));
@@ -69,10 +73,10 @@ ASTNode ASTNode::parseProgram(ASTInput& input) {
 
 ASTNode ASTNode::parseExpression(ASTInput& input) {
   NodeKind kind = NodeKind::expression;
-  ASTNode ret(kind);
+  ASTNode ret(kind, input.line(), input.col());
   parseOptionalWhitespace(input);
   if (input.size() == 0) {
-    throw ParseError(kind, "(", "EOF");
+    throw ParseError(kind, "(", "EOF", input.line(), input.col());
   }
   char next = input.peek();
   if (next == '(') {
@@ -92,9 +96,9 @@ ASTNode ASTNode::parseExpression(ASTInput& input) {
 
 ASTNode ASTNode::parseLiteral(ASTInput& input) {
   NodeKind kind = NodeKind::literal;
-  ASTNode ret(kind);
+  ASTNode ret(kind, input.line(), input.col());
   if (input.size() == 0) {
-    throw ParseError(kind, "any valid literal", "EOF");
+    throw ParseError(kind, "any valid literal", "EOF", input.line(), input.col());
   }
   if (input.peek() == '\'') {
     // string
@@ -123,7 +127,7 @@ ASTNode ASTNode::parseNumber(ASTInput& input) {
         break;
       }
       if (!std::isdigit(next)) {
-        throw ParseError(kind, "digits 0 through 9", next);
+        throw ParseError(kind, "digits 0 through 9", next, input.line(), input.col());
       }
       ss << next;
     }
@@ -135,12 +139,12 @@ ASTNode ASTNode::parseNumber(ASTInput& input) {
   auto result = ss.str();
   if (isFloat) {
     kind = NodeKind::floatingPoint;
-    ASTNode ret(kind);
+    ASTNode ret(kind, input.line(), input.col());
     ret.m_float = std::atof(result.c_str());
     return ret;
   } else {
     kind = NodeKind::integer;
-    ASTNode ret(kind);
+    ASTNode ret(kind, input.line(), input.col());
     ret.m_int = std::atol(result.c_str());
     return ret;
   }
@@ -148,7 +152,7 @@ ASTNode ASTNode::parseNumber(ASTInput& input) {
 
 ASTNode ASTNode::parseString(ASTInput& input) {
   NodeKind kind = NodeKind::string;
-  ASTNode ret(kind);
+  ASTNode ret(kind, input.line(), input.col());
   std::stringstream ss;
   bool foundEndOfString = false;
   expect(kind, input, "'");
@@ -161,7 +165,7 @@ ASTNode ASTNode::parseString(ASTInput& input) {
     if (next == '\\') {
       // escape char
       if (input.size() < 2) {
-        throw ParseError(kind, "any character followed by escape sequence (\\)", "EOF");
+        throw ParseError(kind, "any character followed by escape sequence (\\)", "EOF", input.line(), input.col());
       }
       ss << input.next();
       next = input.peek();
@@ -171,7 +175,7 @@ ASTNode ASTNode::parseString(ASTInput& input) {
     input.next();
   }
   if (!foundEndOfString) {
-    throw ParseError(kind, "end of string marker (')", "EOF");
+    throw ParseError(kind, "end of string marker (')", "EOF", input.line(), input.col());
   }
 
   expect(kind, input, "'");
@@ -181,13 +185,13 @@ ASTNode ASTNode::parseString(ASTInput& input) {
 
 ASTNode ASTNode::parseIdentifier(ASTInput& input) {
   NodeKind kind = NodeKind::identifier;
-  ASTNode ret(kind);
+  ASTNode ret(kind, input.line(), input.col());
   if (input.size() == 0) {
-    throw ParseError(kind, "any valid identifier", "EOF");
+    throw ParseError(kind, "any valid identifier", "EOF", input.line(), input.col());
   }
   char next = input.peek();
   if (next == '\'') {
-    throw ParseError(kind, "non-whitespace character other than '\\'', '(' and ')'", next);
+    throw ParseError(kind, "non-whitespace character other than '\\'', '(' and ')'", next, input.line(), input.col());
   }
   std::stringstream ss;
   while (input.size() != 0) {
@@ -197,7 +201,7 @@ ASTNode ASTNode::parseIdentifier(ASTInput& input) {
       break;
     }
     if (next == '(') {
-      throw ParseError(kind, "non-whitespace character other than '('", next);
+      throw ParseError(kind, "non-whitespace character other than '('", next, input.line(), input.col());
     }
     ss << next;
     input.next();
@@ -224,7 +228,7 @@ void ASTNode::parseWhitespace(ASTInput& input) {
     if (isWhitespace(next)) {
       foundWhitespace = true;
     } else if (!foundWhitespace) {
-      throw ParseError(NodeKind::whitespace, "Any of: ' ', \\r, \\n, \\t", next);
+      throw ParseError(NodeKind::whitespace, "Any of: ' ', \\r, \\n, \\t", next, input.line(), input.col());
     } else {
       break;
     }
@@ -234,9 +238,9 @@ void ASTNode::parseWhitespace(ASTInput& input) {
 
 ASTNode ASTNode::parseOptionalParameterList(ASTInput& input) {
   NodeKind kind = NodeKind::optionalParameterList;
-  ASTNode ret(kind);
+  ASTNode ret(kind, input.line(), input.col());
   if (input.peek() != ')') {
-    ASTNode parameterList(NodeKind::parameterList);
+    ASTNode parameterList(NodeKind::parameterList, input.line(), input.col());
     parameterList.parseParameterList(input);
     ret.m_children.push_back(parameterList);
   }
@@ -247,7 +251,7 @@ void ASTNode::parseParameterList(ASTInput& input) {
   m_children.push_back(parseExpression(input));
   parseOptionalWhitespace(input);
   if (input.size() == 0) {
-    throw ParseError(NodeKind::parameterList, "end of expression ')'", "EOF");
+    throw ParseError(NodeKind::parameterList, "end of expression ')'", "EOF", input.line(), input.col());
   }
   if (input.peek() == ')') {
     // hit end of parameter list
@@ -302,3 +306,11 @@ const std::string& ASTNode::string() const {
 }
 
 ASTNode::ASTNode() : m_kind(NodeKind::invalid) { }
+
+size_t ASTNode::line() const {
+  return m_line;
+}
+
+size_t ASTNode::col() const {
+  return m_col;
+}

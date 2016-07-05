@@ -68,7 +68,7 @@ TEST_CASE("ASTNode") {
 
   SECTION("parseProgram") {
     for (const auto& str : programs) {
-      ASTInput input(str.c_str(), str.size());
+      ASTInput input("TODO-filename", str.c_str(), str.size());
       ASTNode result;
       CHECK_NOTHROW(result = ASTNode::parseProgram(input));
       CHECK(result.kind() == NodeKind::program);
@@ -77,7 +77,7 @@ TEST_CASE("ASTNode") {
 
   SECTION("parseExpression") {
     for (const auto& str : expressions) {
-      ASTInput input(str.c_str(), str.size());
+      ASTInput input("TODO-filename", str.c_str(), str.size());
       ASTNode result;
       CHECK_NOTHROW(result = ASTNode::parseExpression(input));
       // resulting NodeKind could be any of:
@@ -90,7 +90,7 @@ TEST_CASE("ASTNode") {
 
   SECTION("parseIdentifier") {
     for (const auto& str : identifiers) {
-      ASTInput input(str.c_str(), str.size());
+      ASTInput input("TODO-filename", str.c_str(), str.size());
       ASTNode result;
       CHECK_NOTHROW(result = ASTNode::parseIdentifier(input));
       CHECK(result.kind() == NodeKind::identifier);
@@ -99,7 +99,7 @@ TEST_CASE("ASTNode") {
 
   SECTION("parseLiteral") {
     for (const auto& str : literals) {
-      ASTInput input(str.c_str(), str.size());
+      ASTInput input("TODO-filename", str.c_str(), str.size());
       ASTNode result;
       CHECK_NOTHROW(result = ASTNode::parseLiteral(input));
       CHECK(result.kind() == NodeKind::literal);
@@ -108,7 +108,7 @@ TEST_CASE("ASTNode") {
 
   SECTION("parseString") {
     for (const auto& str : strings) {
-      ASTInput input(str.c_str(), str.size());
+      ASTInput input("TODO-filename", str.c_str(), str.size());
       ASTNode result;
       CHECK_NOTHROW(result = ASTNode::parseString(input));
       CHECK(result.kind() == NodeKind::string);
@@ -117,13 +117,13 @@ TEST_CASE("ASTNode") {
 
   SECTION("parseNumber") {
     for (const auto& str : floats) {
-      ASTInput input(str.c_str(), str.size());
+      ASTInput input("TODO-filename", str.c_str(), str.size());
       ASTNode result;
       CHECK_NOTHROW(result = ASTNode::parseNumber(input));
       CHECK(result.kind() == NodeKind::floatingPoint);
     }
     for (const auto& str : integers) {
-      ASTInput input(str.c_str(), str.size());
+      ASTInput input("TODO-filename", str.c_str(), str.size());
       ASTNode result;
       CHECK_NOTHROW(result = ASTNode::parseNumber(input));
       CHECK(result.kind() == NodeKind::integer);

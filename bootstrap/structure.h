@@ -8,6 +8,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "astnode.h"
+
 namespace simplex {
   enum class StructureKind {
     boolean,
@@ -25,7 +27,7 @@ namespace simplex {
 
   class Structure {
     public:
-      typedef std::function<Structure(std::vector<Structure>)> Function;
+      typedef std::function<Structure(const ASTNode&, std::vector<Structure>)> Function;
       typedef std::unordered_map<std::string, Structure> Dict;
 
     private:
@@ -57,7 +59,7 @@ namespace simplex {
       static Structure Nil();
 
       // operators
-      Structure operator()(std::vector<Structure> params);
+      Structure operator()(const ASTNode& node, std::vector<Structure> params);
       operator bool() const;
 
       // accessors

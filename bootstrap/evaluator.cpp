@@ -86,12 +86,15 @@ Structure Evaluator::evalLambdaExpression(const ASTNode& node) {
          children[0].string() == "lambda");
   assert(children[1].kind() == NodeKind::optionalParameterList);
   const auto& parameterList = children[1].children()[0].children();
-  return Structure(static_cast<Structure::Function>([this, parameterList](std::vector<Structure> params) {
-    SymbolTable symbols = m_symbols.augment(dictOfParams(parameterList, params));
-    Evaluator e(symbols);
-    const auto& body = parameterList[parameterList.size()-1];
-    return e.eval(body);
-  }));
+  return Structure(static_cast<Structure::Function>(
+    [this, parameterList]
+    (const ASTNode& node, std::vector<Structure> params) {
+      SymbolTable symbols = m_symbols.augment(dictOfParams(parameterList, params));
+      Evaluator e(symbols);
+      const auto& body = parameterList[parameterList.size()-1];
+      return e.eval(body);
+    }
+  ));
 }
 
 Structure Evaluator::evalCondExpression(const ASTNode& node) {
@@ -103,7 +106,7 @@ Structure Evaluator::evalCondExpression(const ASTNode& node) {
   assert(children[1].kind() == NodeKind::optionalParameterList);
   const auto parameters = children[1].children()[0].children();
   if (parameters.size() % 2 != 0) {
-    throw RuntimeError("cond must take an even number of parameters (pairs of condition and expression)");
+    throw RuntimeError(children[1], "cond must take an even number of parameters (pairs of condition and expression)");
   }
   for (size_t i=0; i<parameters.size(); i+=2) {
     const auto condition = this->eval(parameters[i]);
@@ -111,7 +114,7 @@ Structure Evaluator::evalCondExpression(const ASTNode& node) {
       return this->eval(parameters[i+1]);
     }
   }
-  throw RuntimeError("`cond` expression did not return a value (no condition evaluated to true)");
+  throw RuntimeError(children[1], "`cond` expression did not return a value (no condition evaluated to true)");
 }
 
 Structure Evaluator::evalIfExpression(const ASTNode& node) {
@@ -165,7 +168,7 @@ Structure Evaluator::evalExpression(const ASTNode& node) {
 
   Structure fn = eval(children[0]);
   std::vector<Structure> params = evalParameters(children[1]);
-  return fn(params);
+  return fn(node, params);
 }
 
 Structure Evaluator::evalIdentifier(const ASTNode& node) {
@@ -179,7 +182,7 @@ Structure Evaluator::evalIdentifier(const ASTNode& node) {
     ss << "undeclared identifier: ";
     ss << str;
     const auto str = ss.str();
-    throw RuntimeError(str.c_str());
+    throw RuntimeError(node, str.c_str());
   }
   return Structure(m_symbols.at(str));
 }

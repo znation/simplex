@@ -10,7 +10,7 @@
 namespace simplex {
   class ASTNode {
     private:
-      explicit ASTNode(NodeKind kind);
+      ASTNode(NodeKind kind, size_t line, size_t col);
       NodeKind m_kind;
       union {
         int64_t m_int;
@@ -20,6 +20,8 @@ namespace simplex {
       // see http://cpp11standard.blogspot.com/2012/11/c11-standard-explained-1-unrestricted.html
       std::string m_string;
       std::vector<ASTNode> m_children;
+      size_t m_line;
+      size_t m_col;
 
 #ifdef UNIT_TESTING
     public:
@@ -44,8 +46,10 @@ namespace simplex {
       double floatingPoint() const;
       const std::string& string() const;
       void toString(std::stringstream& ss) const;
-      static ASTNode parseProgram(const char *, size_t);
+      static ASTNode parseProgram(const std::string&, const char *, size_t);
       bool operator==(const ASTNode& other) const;
+      size_t line() const;
+      size_t col() const;
   };
 
   std::ostream& operator<<(std::ostream&, const ASTNode&);

@@ -1,6 +1,7 @@
 #include <exception>
 #include <string>
 
+#include "astnode.h"
 #include "nodekind.h"
 #include "structure.h"
 
@@ -15,20 +16,20 @@ namespace simplex {
 
   class ParseError : public Error {
     private:
-      void set_message(NodeKind kind, const char * expected, const char * actual);
+      void set_message(NodeKind kind, const char * expected, const char * actual, size_t line, size_t col);
 
     public:
-      ParseError(NodeKind kind, const char * expected, const char * actual);
-      ParseError(NodeKind kind, const char * expected, char actual);
+      ParseError(NodeKind kind, const char * expected, const char * actual, size_t line, size_t col);
+      ParseError(NodeKind kind, const char * expected, char actual, size_t line, size_t col);
   };
 
   class RuntimeError : public Error {
     public:
-      RuntimeError(const char * message);
+      RuntimeError(const ASTNode& node, const char * message);
   };
 
   class TypeMismatchError : public Error {
     public:
-      TypeMismatchError(StructureKind expected, StructureKind found);
+      TypeMismatchError(const ASTNode& node, StructureKind expected, StructureKind found);
   };
 };
