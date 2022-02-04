@@ -12,8 +12,8 @@ CXXFLAGS=\
 		-Werror \
 
 
-SRCS=$(wildcard bootstrap/*.cpp) \
-		 $(wildcard bootstrap/test/*.cpp) \
+SRCS=$(wildcard src/*.cpp) \
+		 $(wildcard src/test/*.cpp) \
 
 
 OBJECTS=$(patsubst %.cpp,%.o,$(SRCS))
@@ -23,64 +23,66 @@ default: debug
 
 debug: CXXFLAGS += -DDEBUG -g -O0
 debug: CCFLAGS += -DDEBUG -g -O0
-debug: bootstrap/simplex
+debug: target/simplex
 
 release: CXXFLAGS += -O3
 release: CCFLAGS += -O3
-release: bootstrap/simplex
+release: src/simplex
 
 clean:
-	rm -f ${OBJECTS} ${DEPENDS}
+	rm -f ${OBJECTS} ${DEPENDS} build/* target/*
 
-bootstrap/simplex: bootstrap/simplex.cpp \
-	bootstrap/astinput.o \
-	bootstrap/astnode.o \
-	bootstrap/errors.o \
-	bootstrap/evaluator.o \
-	bootstrap/main.o \
-	bootstrap/nodekind.o \
-	bootstrap/parser.o \
-	bootstrap/repl.o \
-	bootstrap/stdlib.o \
-	bootstrap/structure.o \
-	bootstrap/symboltable.o \
+build/%.o: src/%.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
+target/simplex: src/simplex.cpp \
+	build/astinput.o \
+	build/astnode.o \
+	build/errors.o \
+	build/evaluator.o \
+	build/main.o \
+	build/nodekind.o \
+	build/parser.o \
+	build/repl.o \
+	build/stdlib.o \
+	build/structure.o \
+	build/symboltable.o
+	mkdir -p target
+	$(CXX) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@
 
 test: CXXFLAGS += -DDEBUG -g -O0
 test: CCFLAGS += -DDEBUG -g -O0
-test: bootstrap/test/test
-	./bootstrap/test/test -d yes
+test: test/test
+	./test/test -d yes
 
-bootstrap/test/catch.h:
+test/catch.h:
 	curl -L -o $@ https://github.com/catchorg/Catch2/releases/download/v2.13.8/catch.hpp
 
 # extra dependencies
-bootstrap/evaluator.cpp: bootstrap/simplex_stdlib.h
-bootstrap/test/astnode.cpp: bootstrap/test/catch.h
-bootstrap/test/evaluator.cpp: bootstrap/test/catch.h
-bootstrap/test/parser.cpp: bootstrap/test/catch.h
-bootstrap/test/runner.cpp: bootstrap/test/catch.h
-bootstrap/test/stdlib.cpp: bootstrap/test/catch.h
+src/evaluator.cpp: src/simplex_stdlib.h
+test/astnode.cpp: test/catch.h
+test/evaluator.cpp: test/catch.h
+test/parser.cpp: test/catch.h
+test/runner.cpp: test/catch.h
+test/stdlib.cpp: test/catch.h
 
-bootstrap/test/test: bootstrap/test/test.cpp \
-	bootstrap/test/astnode.o \
-	bootstrap/test/evaluator.o \
-	bootstrap/test/parser.o \
-	bootstrap/test/runner.o \
-	bootstrap/test/stdlib.o \
-	bootstrap/test/structure.o \
-	bootstrap/astinput.o \
-	bootstrap/astnode.o \
-	bootstrap/errors.o \
-	bootstrap/evaluator.o \
-	bootstrap/nodekind.o \
-	bootstrap/parser.o \
-	bootstrap/stdlib.o \
-	bootstrap/structure.o \
-	bootstrap/symboltable.o \
+test/test: test/test.cpp \
+	build/test/astnode.o \
+	build/test/evaluator.o \
+	build/test/parser.o \
+	build/test/runner.o \
+	build/test/stdlib.o \
+	build/test/structure.o \
+	build/astinput.o \
+	build/astnode.o \
+	build/errors.o \
+	build/evaluator.o \
+	build/nodekind.o \
+	build/parser.o \
+	build/stdlib.o \
+	build/structure.o \
+	build/symboltable.o \
 
 
-bootstrap/simplex_stdlib.h: stdlib.simplex
+src/simplex_stdlib.h: src/stdlib.simplex
 	xxd -i $< > $@
-
--include ${DEPENDS}
