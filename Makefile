@@ -32,7 +32,12 @@ release: src/simplex
 clean:
 	rm -f ${OBJECTS} ${DEPENDS} build/* target/*
 
+build/test/%.o: test/%.cpp
+	mkdir -p build/test
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
 build/%.o: src/%.cpp
+	mkdir -p build
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 target/simplex: src/simplex.cpp \

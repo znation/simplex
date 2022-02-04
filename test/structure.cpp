@@ -1,8 +1,8 @@
 #include <sstream>
 
 #define UNIT_TESTING
-#include "../structure.h"
-#include "../errors.h"
+#include "../src/structure.h"
+#include "../src/errors.h"
 
 #include "catch.h"
 

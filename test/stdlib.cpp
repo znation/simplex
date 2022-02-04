@@ -1,8 +1,8 @@
 #include <sstream>
 
 #define UNIT_TESTING
-#include "../evaluator.h"
-#include "../errors.h"
+#include "../src/evaluator.h"
+#include "../src/errors.h"
 
 #include "catch.h"
 #include "macros.h"

@@ -1,6 +1,6 @@
 #include "catch.h"
-#include "../errors.h"
-#include "../parser.h"
+#include "../src/errors.h"
+#include "../src/parser.h"
 
 using namespace simplex;
 using namespace simplex::Parser;

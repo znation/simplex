@@ -1,7 +1,7 @@
 #include "catch.h"
 
 #define UNIT_TESTING
-#include "../astnode.h"
+#include "../src/astnode.h"
 
 using namespace simplex;
 
