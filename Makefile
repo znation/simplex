@@ -52,7 +52,7 @@ test: bootstrap/test/test
 	./bootstrap/test/test -d yes
 
 bootstrap/test/catch.h:
-	curl -o $@ https://raw.githubusercontent.com/philsquared/Catch/v1.3.3/single_include/catch.hpp
+	curl -L -o $@ https://github.com/catchorg/Catch2/releases/download/v2.13.8/catch.hpp
 
 # extra dependencies
 bootstrap/evaluator.cpp: bootstrap/simplex_stdlib.h

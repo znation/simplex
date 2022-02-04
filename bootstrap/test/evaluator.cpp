@@ -1,3 +1,5 @@
+#include <sstream>
+
 #define UNIT_TESTING
 #include "../evaluator.h"
 #include "../errors.h"
