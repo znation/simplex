@@ -36,12 +36,47 @@ mod tests {
 
     macro_rules! CHECK_MATH_1 {
         ($e: ident, $op:tt, $p: literal, $expected: literal) => {
-            let result = $e.eval(stringify!(($op $a)).to_string());
+            // run the given operator and compare the result in Rust
+            let result = $e.eval(stringify!(($op $p)).to_string());
             assert!(result.is_ok());
-            if result.is_ok() {
-                //assert_eq!(result.unwrap(), $expected);
-                //assert_eq!($e.eval(stringify!((= ($op $a) $result))), true);
-            }
+            let type_conversion_result = result.unwrap().unbox();
+            assert!(type_conversion_result.is_ok());
+
+            // comparing all math in f64 should be sufficient
+            let unwrapped: f64 = type_conversion_result.unwrap();
+            assert_eq!(unwrapped, $expected as f64);
+
+            // now, run the same operator and compare within the evaluator
+            // (the = expression should return true)
+            let result2 = $e.eval(stringify!((= ($op $p) $expected)).to_string());
+            assert!(result2.is_ok());
+            let type_conversion_result2 = result2.unwrap().unbox();
+            assert!(type_conversion_result2.is_ok());
+            let unwrapped2: bool = type_conversion_result2.unwrap();
+            assert!(unwrapped2);
+        };
+    }
+
+    macro_rules! CHECK_MATH_2 {
+        ($e: ident, $op:tt, $p1: literal, $p2: literal, $expected: literal) => {
+            // run the given operator and compare the result in Rust
+            let result = $e.eval(stringify!(($op $p1 $p2)).to_string());
+            assert!(result.is_ok());
+            let type_conversion_result = result.unwrap().unbox();
+            assert!(type_conversion_result.is_ok());
+
+            // comparing all math in f64 should be sufficient
+            let unwrapped: f64 = type_conversion_result.unwrap();
+            assert_eq!(unwrapped, $expected as f64);
+
+            // now, run the same operator and compare within the evaluator
+            // (the = expression should return true)
+            let result2 = $e.eval(stringify!((= ($op $p1 p2) $expected)).to_string());
+            assert!(result2.is_ok());
+            let type_conversion_result2 = result2.unwrap().unbox();
+            assert!(type_conversion_result2.is_ok());
+            let unwrapped2: bool = type_conversion_result2.unwrap();
+            assert!(unwrapped2);
         };
     }
 
@@ -50,18 +85,18 @@ mod tests {
     fn test_basic_math() {
         let e = Evaluator::new();
         CHECK_MATH_1!(e, +, 4, 4);
-        //CHECK_MATH_2(+, 4, 3, 7);
-        //CHECK_MATH_2(+, 34.2, 5, 39.2);
-        //CHECK_MATH_1(-, 2, (- 2));
-        //CHECK_MATH_1(-, 3.45, (- 3.45));
-        //CHECK_MATH_2(-, 10, 2, 8);
-        //CHECK_MATH_2(*, 8, 2, 16);
-        //CHECK_MATH_2(*, (- 2), 24, (- 48));
-        //CHECK_MATH_2(*, (- 1.5), 2, (- 3.0));
-        //CHECK_MATH_2(/, 8, 2, 4);
-        //CHECK_MATH_2(/, (- 2), 24, 0);
-        //CHECK_MATH_2(/, (- 58), 3, (- 19));
-        //CHECK_MATH_2(/, (- 1.5), 2, (- 0.75));
-        //CHECK_MATH_2(/, 0.5, 2.0, 0.25);
+        CHECK_MATH_2!(e, +, 4, 3, 7);
+        CHECK_MATH_2!(e, +, 34.2, 5, 39.2);
+        //CHECK_MATH_1!(e, -, 2, (- 2));
+        //CHECK_MATH_1!(e, -, 3.45, (- 3.45));
+        CHECK_MATH_2!(e, -, 10, 2, 8);
+        CHECK_MATH_2!(e, *, 8, 2, 16);
+        //CHECK_MATH_2!(e, *, (- 2), 24, (- 48));
+        //CHECK_MATH_2!(e, *, (- 1.5), 2, (- 3.0));
+        CHECK_MATH_2!(e, /, 8, 2, 4);
+        //CHECK_MATH_2!(e, /, (- 2), 24, 0);
+        //CHECK_MATH_2!(e, /, (- 58), 3, (- 19));
+        //CHECK_MATH_2!(e, /, (- 1.5), 2, (- 0.75));
+        CHECK_MATH_2!(e, /, 0.5, 2.0, 0.25);
     }
 }
