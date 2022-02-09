@@ -1,6 +1,7 @@
 
 mod evaluator;
 mod symboltable;
+mod structure;
 
 use std::env;
 use std::fs;
@@ -22,7 +23,8 @@ fn main() -> Result<(), EvaluationError> {
         });
         for result in results {
             if !result.is_ok() {
-                return result
+                println!("{}", result.unwrap());
+                return Ok(())
             }
         }
         return Ok(())
@@ -40,7 +42,12 @@ fn main() -> Result<(), EvaluationError> {
         if !result.is_ok() {
             return Err(EvaluationError{});
         }
-        return evaluator.eval(input);
+        let evaluation_result = evaluator.eval(input);
+        if !evaluation_result.is_ok() {
+            return Err(EvaluationError{});
+        }
+        println!("{}", evaluation_result.unwrap());
+        return Ok(());
 
         
     //}
