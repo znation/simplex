@@ -1,7 +1,7 @@
 
 mod evaluator;
-mod symboltable;
 mod structure;
+mod stdlib;
 
 use std::env;
 use std::fs;

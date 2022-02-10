@@ -1,19 +1,39 @@
-use crate::symboltable::SymbolTable;
+use std::collections::HashMap;
+
+use crate::stdlib::Stdlib;
 use crate::structure::Structure;
 use crate::structure::StructureKind;
+
+type SymbolTable = HashMap<String, Structure>;
 
 pub struct Evaluator {
     symbols: SymbolTable
 }
 
 impl Evaluator {
-   pub fn new() -> Evaluator {
-       return Evaluator { symbols: SymbolTable::new() }
-   } 
+    pub fn add_symbols(&mut self, new_symbols: SymbolTable) {
+        for (k,v) in new_symbols {
+            self.symbols.insert(k, v);
+        }
+    }
 
-   pub fn eval(&self, str: String) -> Result<Structure, EvaluationError> {
-       return Ok(Structure { kind: StructureKind::Nil })
-   }
+    pub fn new() -> Evaluator {
+        let mut ret = Evaluator { symbols: SymbolTable::new() };
+
+        // Rust-native parts of the standard library
+        ret.add_symbols(Stdlib::symbols());
+
+        // Simplex stdlib (written in simplex)
+        let simplex_lib = include_str!("stdlib.simplex");
+        let result = ret.eval(simplex_lib.to_string());
+        assert!(result.is_ok());
+
+        return ret;
+    } 
+
+    pub fn eval(&self, str: String) -> Result<Structure, EvaluationError> {
+        return Ok(Structure { kind: StructureKind::Nil })
+    }
 }
 
 impl Default for Evaluator {
