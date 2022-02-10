@@ -13,25 +13,26 @@ pub enum StructureKind {
     Nil,
 }
 
-impl StructureKind {
-    
-}
+impl StructureKind {}
 
 #[derive(Debug, PartialEq)]
 pub struct Structure {
-    pub kind: StructureKind 
+    pub kind: StructureKind,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct TypeMismatchError {
     pub expected: StructureKind,
-    pub found: StructureKind
+    pub found: StructureKind,
 }
 impl TypeMismatchError {}
 
 impl Structure {
     pub fn unbox<T>(&self) -> Result<T, TypeMismatchError> {
-        return Err(TypeMismatchError { expected: StructureKind::Invalid, found: StructureKind::Invalid })
+        return Err(TypeMismatchError {
+            expected: StructureKind::Invalid,
+            found: StructureKind::Invalid,
+        });
     }
 }
 

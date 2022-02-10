@@ -7,18 +7,20 @@ use crate::structure::StructureKind;
 type SymbolTable = HashMap<String, Structure>;
 
 pub struct Evaluator {
-    symbols: SymbolTable
+    symbols: SymbolTable,
 }
 
 impl Evaluator {
     pub fn add_symbols(&mut self, new_symbols: SymbolTable) {
-        for (k,v) in new_symbols {
+        for (k, v) in new_symbols {
             self.symbols.insert(k, v);
         }
     }
 
     pub fn new() -> Evaluator {
-        let mut ret = Evaluator { symbols: SymbolTable::new() };
+        let mut ret = Evaluator {
+            symbols: SymbolTable::new(),
+        };
 
         // Rust-native parts of the standard library
         ret.add_symbols(Stdlib::symbols());
@@ -29,10 +31,12 @@ impl Evaluator {
         assert!(result.is_ok());
 
         return ret;
-    } 
+    }
 
     pub fn eval(&self, str: String) -> Result<Structure, EvaluationError> {
-        return Ok(Structure { kind: StructureKind::Nil })
+        return Ok(Structure {
+            kind: StructureKind::Nil,
+        });
     }
 }
 
@@ -45,9 +49,7 @@ impl Default for Evaluator {
 #[derive(Debug, PartialEq)]
 pub struct EvaluationError {}
 
-impl EvaluationError {
-    
-}
+impl EvaluationError {}
 
 #[cfg(test)]
 mod tests {
@@ -99,7 +101,6 @@ mod tests {
             assert!(unwrapped2);
         };
     }
-
 
     #[test]
     fn test_basic_math() {
