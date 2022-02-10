@@ -21,7 +21,7 @@ fn main() -> Result<(), EvaluationError> {
             return evaluator.eval(contents);
         });
         for result in results {
-            if !result.is_ok() {
+            if result.is_err() {
                 println!("{}", result.unwrap());
                 return Ok(());
             }
@@ -38,11 +38,11 @@ fn main() -> Result<(), EvaluationError> {
     // Read an expression from stdin
     let mut input = String::new();
     let result = io::stdin().read_to_string(&mut input);
-    if !result.is_ok() {
+    if result.is_err() {
         return Err(EvaluationError {});
     }
     let evaluation_result = evaluator.eval(input);
-    if !evaluation_result.is_ok() {
+    if evaluation_result.is_err() {
         return Err(EvaluationError {});
     }
     println!("{}", evaluation_result.unwrap());
