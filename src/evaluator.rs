@@ -33,6 +33,10 @@ impl Evaluator {
         return ret;
     }
 
+    pub fn eval(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
+
+    }
+
     pub fn eval(&self, str: String) -> Result<Structure, EvaluationError> {
         return Ok(Structure {
             kind: StructureKind::Nil,

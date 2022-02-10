@@ -5,6 +5,7 @@ use crate::structure::Structure;
 pub struct Stdlib {}
 impl Stdlib {
     pub fn symbols() -> HashMap<String, Structure> {
+        // TODO: populate built-in symbols with Rust implementations
         return HashMap::new();
     }
 }
