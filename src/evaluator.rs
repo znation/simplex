@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::astnode::ASTNode;
 use crate::stdlib::Stdlib;
 use crate::structure::Structure;
 use crate::structure::StructureKind;
@@ -33,7 +34,7 @@ impl Evaluator {
         return ret;
     }
 
-    pub fn eval(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
+    pub fn eval_node(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
 
     }
 

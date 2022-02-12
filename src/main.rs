@@ -1,6 +1,9 @@
 mod evaluator;
 mod stdlib;
 mod structure;
+mod astnode;
+mod parser;
+mod astinput;
 
 use std::env;
 use std::fs;
