@@ -4,6 +4,7 @@ mod structure;
 mod astnode;
 mod parser;
 mod astinput;
+mod errors;
 
 use std::env;
 use std::fs;
