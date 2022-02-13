@@ -210,27 +210,23 @@ impl ASTNode {
         if isFloat {
             kind = NodeKind::FloatingPoint;
             match result.parse::<f64>() {
-                Ok(value) => {
-                    Ok(ASTNode {
-                        kind,
-                        value: ASTValue::Double(value),
-                        line,
-                        col,
-                    })
-                }
+                Ok(value) => Ok(ASTNode {
+                    kind,
+                    value: ASTValue::Double(value),
+                    line,
+                    col,
+                }),
                 Err(_e) => panic!(),
             }
         } else {
             kind = NodeKind::Integer;
             match result.parse::<i64>() {
-                Ok(value) => {
-                    Ok(ASTNode {
-                        kind,
-                        value: ASTValue::Int(value),
-                        line,
-                        col,
-                    })
-                }
+                Ok(value) => Ok(ASTNode {
+                    kind,
+                    value: ASTValue::Int(value),
+                    line,
+                    col,
+                }),
                 Err(_e) => panic!(),
             }
         }
