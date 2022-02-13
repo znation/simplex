@@ -32,8 +32,8 @@ impl ASTInput<'_> {
           }
       }
 
-      pub fn get(&self) -> Chars {
-          self.current
+      pub fn get(&self) -> &Chars {
+          &self.current
       }
 
       pub fn next(&mut self) -> char {
@@ -43,7 +43,9 @@ impl ASTInput<'_> {
       }
 
       pub fn peek(&self) -> char {
-          let result = self.current.peekable().peek();
+          let current = &self.current;
+          let mut peekable = current.peekable();
+          let result = peekable.peek();
           match result {
               Some(char) => *char,
               None => '\0',

@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
 use crate::astnode::ASTNode;
+use crate::errors::EvaluationError;
+use crate::errors::ParseError;
+use crate::parser::Parser;
 use crate::stdlib::Stdlib;
 use crate::structure::Structure;
 use crate::structure::StructureKind;
@@ -35,13 +38,17 @@ impl Evaluator {
     }
 
     pub fn eval_node(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
-
-    }
-
-    pub fn eval(&self, str: String) -> Result<Structure, EvaluationError> {
         return Ok(Structure {
             kind: StructureKind::Nil,
         });
+    }
+
+    pub fn eval(&self, str: String) -> Result<Structure, EvaluationError> {
+        let node = match Parser::parse(str) {
+            Ok(n) => n,
+            Err(e) => return Err(EvaluationError::from_parse_error(e))
+        };
+        self.eval_node(node)
     }
 }
 
@@ -50,11 +57,6 @@ impl Default for Evaluator {
         Self::new()
     }
 }
-
-#[derive(Debug, PartialEq)]
-pub struct EvaluationError {}
-
-impl EvaluationError {}
 
 #[cfg(test)]
 mod tests {

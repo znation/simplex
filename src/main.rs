@@ -11,7 +11,7 @@ use std::fs;
 use std::io;
 use std::io::Read;
 
-use evaluator::EvaluationError;
+use errors::EvaluationError;
 use evaluator::Evaluator;
 
 fn main() -> Result<(), EvaluationError> {
@@ -43,11 +43,11 @@ fn main() -> Result<(), EvaluationError> {
     let mut input = String::new();
     let result = io::stdin().read_to_string(&mut input);
     if result.is_err() {
-        return Err(EvaluationError {});
+        return Err(EvaluationError { message: result.unwrap_err().to_string() });
     }
     let evaluation_result = evaluator.eval(input);
     if evaluation_result.is_err() {
-        return Err(EvaluationError {});
+        return Err(evaluation_result.unwrap_err());
     }
     println!("{}", evaluation_result.unwrap());
     return Ok(());

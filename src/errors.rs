@@ -3,7 +3,7 @@ use crate::astnode::NodeKind;
 
 #[derive(Debug, PartialEq)]
 pub struct ParseError {
-    message: String
+    pub message: String
 }
 
 impl ParseError {
@@ -19,4 +19,15 @@ impl ParseError {
               )
           }
         }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct EvaluationError {
+    pub message: String
+}
+
+impl EvaluationError {
+    pub fn from_parse_error(e: ParseError) -> EvaluationError {
+        EvaluationError { message: e.message }
+    }
 }
