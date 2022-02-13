@@ -1,10 +1,10 @@
+mod astinput;
+mod astnode;
+mod errors;
 mod evaluator;
+mod parser;
 mod stdlib;
 mod structure;
-mod astnode;
-mod parser;
-mod astinput;
-mod errors;
 
 use std::env;
 use std::fs;
@@ -43,7 +43,9 @@ fn main() -> Result<(), EvaluationError> {
     let mut input = String::new();
     let result = io::stdin().read_to_string(&mut input);
     if result.is_err() {
-        return Err(EvaluationError { message: result.unwrap_err().to_string() });
+        return Err(EvaluationError {
+            message: result.unwrap_err().to_string(),
+        });
     }
     let evaluation_result = evaluator.eval(input);
     if evaluation_result.is_err() {

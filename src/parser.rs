@@ -1,9 +1,7 @@
-use crate::{astnode::ASTNode, astinput::ASTInput, errors::ParseError};
+use crate::{astinput::ASTInput, astnode::ASTNode, errors::ParseError};
 
 #[derive(Debug, PartialEq)]
-pub struct Parser {
-
-}
+pub struct Parser {}
 
 impl Parser {
     pub fn parse(input: String) -> Result<ASTNode, ParseError> {

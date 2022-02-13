@@ -46,7 +46,7 @@ impl Evaluator {
     pub fn eval(&self, str: String) -> Result<Structure, EvaluationError> {
         let node = match Parser::parse(str) {
             Ok(n) => n,
-            Err(e) => return Err(EvaluationError::from_parse_error(e))
+            Err(e) => return Err(EvaluationError::from_parse_error(e)),
         };
         self.eval_node(node)
     }
