@@ -1,19 +1,15 @@
-use std::str::Chars;
-
 #[derive(Debug)]
-pub struct ASTInput<'a> {
-    input: &'a String,
-    current: Chars<'a>,
+pub struct ASTInput {
+    current: String,
     line: i64,
     col: i64,
 }
 
-impl ASTInput<'_> {
+impl ASTInput {
 
-      pub fn from_str<'a>(input: &'a String) -> ASTInput<'a> {
+      pub fn from_str(input: &str) -> ASTInput {
         ASTInput {
-            input: input,
-            current: input.chars(),
+            current: input.to_string(),
             line: 1,
             col: 1
         }
@@ -22,7 +18,9 @@ impl ASTInput<'_> {
       pub fn advance(&mut self, by: usize) {
           assert!(self.size() >= by);
           for i in 0..by {
-              let next = self.current.next().unwrap();
+              let chars = self.current.chars();
+              // TODO: refactor to minimize use of O(n) remove call
+              let next = self.current.remove(0);
               if next == '\n' {
                   self.col = 0;
                   self.line += 1;
@@ -32,7 +30,7 @@ impl ASTInput<'_> {
           }
       }
 
-      pub fn get(&self) -> &Chars {
+      pub fn get(&self) -> &str {
           &self.current
       }
 
@@ -42,22 +40,15 @@ impl ASTInput<'_> {
           ret
       }
 
-      pub fn peek(&self) -> char {
-          let current = &self.current;
-          let mut peekable = current.peekable();
-          let result = peekable.peek();
-          match result {
-              Some(char) => *char,
-              None => '\0',
-          }
-      }
-
-      pub fn remaining(&self) -> &str {
-          self.current.as_str()
-      }
+      pub fn peek(&mut self) -> char {
+          match self.current.chars().nth(0) {
+            Some(char) => char,
+            None => '\0'
+        }
+    }
      
       pub fn size(&self) -> usize {
-          self.current.count()
+        self.current.chars().count()
       }
       
       pub fn line(&self) -> i64 {

@@ -7,7 +7,7 @@ pub struct Parser {
 
 impl Parser {
     pub fn parse(input: String) -> Result<ASTNode, ParseError> {
-        let ast_input = ASTInput::from_str(&input);
+        let mut ast_input = ASTInput::from_str(&input);
         ASTNode::parse_program(&mut ast_input)
     }
 }
