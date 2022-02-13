@@ -22,7 +22,7 @@ fn main() -> Result<(), EvaluationError> {
         let results = env::args().skip(1).map(|argument| {
             let contents =
                 fs::read_to_string(argument).expect("Something went wrong reading the file");
-            return evaluator.eval(contents);
+            evaluator.eval(contents)
         });
         for result in results {
             if result.is_err() {
@@ -52,7 +52,7 @@ fn main() -> Result<(), EvaluationError> {
         return Err(evaluation_result.unwrap_err());
     }
     println!("{}", evaluation_result.unwrap());
-    return Ok(());
+    Ok(())
 
     //}
 

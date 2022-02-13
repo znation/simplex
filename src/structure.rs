@@ -29,15 +29,15 @@ impl TypeMismatchError {}
 
 impl Structure {
     pub fn unbox<T>(&self) -> Result<T, TypeMismatchError> {
-        return Err(TypeMismatchError {
+        Err(TypeMismatchError {
             expected: StructureKind::Invalid,
             found: StructureKind::Invalid,
-        });
+        })
     }
 }
 
 impl fmt::Display for Structure {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", "TODO: implement fmt for Structure")
+        write!(f, "TODO: implement fmt for Structure")
     }
 }

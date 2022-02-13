@@ -32,13 +32,13 @@ impl ASTNode {
             Ok(v) => ret.children().push(v),
             Err(e) => return Err(e),
         }
-        if (input.size() > 0) {
+        if input.size() > 0 {
             match ASTNode::parse_program(input) {
                 Ok(v) => ret.children().push(v),
                 Err(e) => return Err(e),
             }
         }
-        return Ok(ret);
+        Ok(ret)
     }
 
     pub fn parse_expression(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
@@ -49,7 +49,7 @@ impl ASTNode {
             Err(e) => return Err(e),
         }
 
-        if (input.size() == 0) {
+        if input.size() == 0 {
             return Err(ParseError::from(
                 kind,
                 "(",
@@ -60,7 +60,7 @@ impl ASTNode {
         }
 
         let next = input.peek();
-        let ret = if (next == '(') {
+        let ret = if next == '(' {
             let mut children = Vec::new();
             ASTNode::expect(kind, input, "(");
             match ASTNode::parse_expression(input) {
@@ -77,12 +77,12 @@ impl ASTNode {
             }
             ASTNode::expect(kind, input, ")");
             Ok(ASTNode {
-                kind: kind,
+                kind,
                 value: ASTValue::Children(children),
                 line: input.line(),
                 col: input.col(),
             })
-        } else if (next == '\'' || next.is_digit(10)) {
+        } else if next == '\'' || next.is_digit(10) {
             ASTNode::parse_literal(input)
         } else {
             ASTNode::parse_identifier(input)
@@ -91,11 +91,11 @@ impl ASTNode {
             Ok(_) => (),
             Err(e) => return Err(e),
         }
-        return ret;
+        ret
     }
     pub fn parse_optional_parameter_list(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
         let kind = NodeKind::OptionalParameterList;
-        let value = if (input.peek() != ')') {
+        let value = if input.peek() != ')' {
             let mut parameterList = ASTNode {
                 kind: NodeKind::ParameterList,
                 value: ASTValue::Children(Vec::new()),
@@ -107,12 +107,12 @@ impl ASTNode {
         } else {
             Vec::new()
         };
-        return Ok(ASTNode {
+        Ok(ASTNode {
             kind,
             value: ASTValue::Children(value),
             line: input.line(),
             col: input.col(),
-        });
+        })
     }
     pub fn parse_parameter_list(&mut self, input: &mut ASTInput) -> Result<(), ParseError> {
         match ASTNode::parse_expression(input) {
@@ -125,7 +125,7 @@ impl ASTNode {
             Err(e) => return Err(e),
         }
 
-        if (input.size() == 0) {
+        if input.size() == 0 {
             return Err(ParseError::from(
                 NodeKind::ParameterList,
                 "end of expression ')'",
@@ -134,7 +134,7 @@ impl ASTNode {
                 input.col(),
             ));
         }
-        if (input.peek() == ')') {
+        if input.peek() == ')' {
             // hit end of parameter list
             return Ok(());
         }
@@ -145,7 +145,7 @@ impl ASTNode {
         let kind = NodeKind::Literal;
         let line = input.line();
         let col = input.col();
-        if (input.size() == 0) {
+        if input.size() == 0 {
             return Err(ParseError::from(
                 kind,
                 "any valid literal",
@@ -154,7 +154,7 @@ impl ASTNode {
                 input.col(),
             ));
         }
-        let result = if (input.peek() == '\'') {
+        let result = if input.peek() == '\'' {
             // string
             ASTNode::parse_string(input)
         } else {
@@ -180,15 +180,15 @@ impl ASTNode {
         let inputLen = input.size();
         for i in 0..inputLen {
             let next = input.peek();
-            if (i > 0 && next == '.') {
+            if i > 0 && next == '.' {
                 ss.push(next);
                 isFloat = true;
             } else {
-                if (is_whitespace(next) || next == ')') {
+                if is_whitespace(next) || next == ')' {
                     // number is done
                     break;
                 }
-                if (!next.is_digit(10)) {
+                if !next.is_digit(10) {
                     return Err(ParseError::from(
                         kind,
                         "digits 0 through 9",
@@ -207,50 +207,50 @@ impl ASTNode {
         let result = ss;
         let line = input.line();
         let col = input.col();
-        if (isFloat) {
+        if isFloat {
             kind = NodeKind::FloatingPoint;
             match result.parse::<f64>() {
                 Ok(value) => {
-                    return Ok(ASTNode {
+                    Ok(ASTNode {
                         kind,
                         value: ASTValue::Double(value),
                         line,
                         col,
                     })
                 }
-                Err(e) => panic!(),
+                Err(_e) => panic!(),
             }
         } else {
             kind = NodeKind::Integer;
             match result.parse::<i64>() {
                 Ok(value) => {
-                    return Ok(ASTNode {
+                    Ok(ASTNode {
                         kind,
                         value: ASTValue::Int(value),
                         line,
                         col,
                     })
                 }
-                Err(e) => panic!(),
+                Err(_e) => panic!(),
             }
         }
     }
     pub fn parse_optional_whitespace(input: &mut ASTInput) -> Result<(), ParseError> {
-        if (input.size() == 0) {
+        if input.size() == 0 {
             return Ok(());
         }
-        if (!is_whitespace(input.peek())) {
+        if !is_whitespace(input.peek()) {
             return Ok(());
         }
         ASTNode::parse_whitespace(input)
     }
     pub fn parse_whitespace(input: &mut ASTInput) -> Result<(), ParseError> {
         let mut found_whitespace = false;
-        while (input.size() != 0) {
+        while input.size() != 0 {
             let next = input.peek();
-            if (is_whitespace(next)) {
+            if is_whitespace(next) {
                 found_whitespace = true;
-            } else if (!found_whitespace) {
+            } else if !found_whitespace {
                 return Err(ParseError::from(
                     NodeKind::Whitespace,
                     "Any of: ' ', \\r, \\n, \\t",
@@ -269,7 +269,7 @@ impl ASTNode {
         let kind = NodeKind::Identifier;
         let line = input.line();
         let col = input.col();
-        if (input.size() == 0) {
+        if input.size() == 0 {
             return Err(ParseError::from(
                 kind,
                 "any valid identifier",
@@ -279,7 +279,7 @@ impl ASTNode {
             ));
         }
         let mut next = input.peek();
-        if (next == '\'') {
+        if next == '\'' {
             return Err(ParseError::from(
                 kind,
                 "non-whitespace character other than '\\'', '(' and ')'",
@@ -289,12 +289,12 @@ impl ASTNode {
             ));
         }
         let mut ss = String::new();
-        while (input.size() != 0) {
+        while input.size() != 0 {
             next = input.peek();
-            if (is_whitespace(next) || next == ')') {
+            if is_whitespace(next) || next == ')' {
                 break;
             }
-            if (next == '(') {
+            if next == '(' {
                 return Err(ParseError::from(
                     kind,
                     "non-whitespace character other than '('",
@@ -322,15 +322,15 @@ impl ASTNode {
         let mut ss = String::new();
         let mut foundEndOfString = false;
         ASTNode::expect(kind, input, "'");
-        while (input.size() != 0) {
+        while input.size() != 0 {
             let mut next = input.peek();
-            if (next == '\'') {
+            if next == '\'' {
                 foundEndOfString = true;
                 break;
             }
-            if (next == '\\') {
+            if next == '\\' {
                 // escape char
-                if (input.size() < 2) {
+                if input.size() < 2 {
                     return Err(ParseError::from(
                         kind,
                         "any character followed by escape sequence (\\)",
@@ -346,7 +346,7 @@ impl ASTNode {
             ss.push(next);
             input.next();
         }
-        if (!foundEndOfString) {
+        if !foundEndOfString {
             return Err(ParseError::from(
                 kind,
                 "end of string marker (')",
@@ -380,7 +380,7 @@ impl ASTNode {
         // unsafe because of static mutable INDENT_LEVEL
         unsafe {
             assert!(INDENT_LEVEL >= 0);
-            for i in 0..INDENT_LEVEL {
+            for _i in 0..INDENT_LEVEL {
                 ss.push(' ');
             }
             let kind = format!("{:#?}", self.kind());
@@ -443,7 +443,7 @@ impl ASTNode {
     ) -> Result<(), ParseError> {
         let tokenStr = token.as_ref();
         let tokenSize = tokenStr.chars().count();
-        if (tokenSize > input.size()) {
+        if tokenSize > input.size() {
             let remaining = input.get();
             return Err(ParseError::from(
                 kind,
@@ -454,7 +454,7 @@ impl ASTNode {
             ));
         }
         let should_be_token = &input.get()[0..tokenSize];
-        if (should_be_token != tokenStr) {
+        if should_be_token != tokenStr {
             return Err(ParseError::from(
                 kind,
                 token,
@@ -464,7 +464,7 @@ impl ASTNode {
             ));
         }
         input.advance(tokenSize);
-        return Ok(());
+        Ok(())
     }
 }
 
@@ -484,7 +484,7 @@ pub enum NodeKind {
 }
 
 fn is_whitespace(c: char) -> bool {
-    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+    c == ' ' || c == '\t' || c == '\n' || c == '\r'
 }
 
 static mut INDENT_LEVEL: i64 = 0;

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::astnode::ASTNode;
 use crate::errors::EvaluationError;
-use crate::errors::ParseError;
+
 use crate::parser::Parser;
 use crate::stdlib::Stdlib;
 use crate::structure::Structure;
@@ -34,13 +34,13 @@ impl Evaluator {
         let result = ret.eval(simplex_lib.to_string());
         assert!(result.is_ok());
 
-        return ret;
+        ret
     }
 
-    pub fn eval_node(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
-        return Ok(Structure {
+    pub fn eval_node(&self, _node: ASTNode) -> Result<Structure, EvaluationError> {
+        Ok(Structure {
             kind: StructureKind::Nil,
-        });
+        })
     }
 
     pub fn eval(&self, str: String) -> Result<Structure, EvaluationError> {

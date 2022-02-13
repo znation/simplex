@@ -16,8 +16,7 @@ impl ASTInput {
 
     pub fn advance(&mut self, by: usize) {
         assert!(self.size() >= by);
-        for i in 0..by {
-            let chars = self.current.chars();
+        for _ in 0..by {
             // TODO: refactor to minimize use of O(n) remove call
             let next = self.current.remove(0);
             if next == '\n' {
@@ -40,10 +39,7 @@ impl ASTInput {
     }
 
     pub fn peek(&mut self) -> char {
-        match self.current.chars().nth(0) {
-            Some(char) => char,
-            None => '\0',
-        }
+        self.current.chars().next().unwrap_or('\0')
     }
 
     pub fn size(&self) -> usize {
