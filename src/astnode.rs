@@ -3,7 +3,7 @@ use std::fmt::Display;
 use crate::astinput::ASTInput;
 use crate::errors::ParseError;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 enum ASTValue {
     Int(i64),
     Double(f64),
@@ -12,7 +12,7 @@ enum ASTValue {
     Invalid,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ASTNode {
     kind: NodeKind,
     value: ASTValue,

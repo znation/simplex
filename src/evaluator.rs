@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::astnode::ASTNode;
+use crate::astnode::NodeKind;
 use crate::errors::EvaluationError;
 
 use crate::parser::Parser;
@@ -37,18 +38,118 @@ impl Evaluator {
         ret
     }
 
-    pub fn eval_node(&self, _node: ASTNode) -> Result<Structure, EvaluationError> {
-        Ok(Structure {
-            kind: StructureKind::Nil,
-        })
+    pub fn eval_node(&mut self, node: ASTNode) -> Result<Structure, EvaluationError> {
+        match node.kind() {
+            crate::astnode::NodeKind::Expression => self.eval_expression(node),
+            crate::astnode::NodeKind::Identifier => self.eval_identifier(node),
+            crate::astnode::NodeKind::Literal => self.eval_literal(node),
+            crate::astnode::NodeKind::Program => self.eval_program(node),
+            _ => panic!(),
+        }
     }
 
-    pub fn eval(&self, str: String) -> Result<Structure, EvaluationError> {
+    pub fn eval(&mut self, str: String) -> Result<Structure, EvaluationError> {
         let node = match Parser::parse(str) {
             Ok(n) => n,
             Err(e) => return Err(EvaluationError::from_parse_error(e)),
         };
         self.eval_node(node)
+    }
+
+    pub fn eval_lambda_expression(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
+        todo!()
+    }
+    pub fn eval_let_expression(&mut self, node: ASTNode) -> Result<Structure, EvaluationError> {
+        assert_eq!(node.kind(), NodeKind::Expression);
+        let children = node.children();
+        assert_eq!(children.len(), 2);
+        let child0 = children[0].clone();
+        let child1 = children[1].clone();
+        assert_eq!(child0.kind(), NodeKind::Identifier);
+        assert_eq!(child0.string(), "let");
+        assert_eq!(child1.kind(), NodeKind::OptionalParameterList);
+        let parameterList = child1.children()[0].clone();
+        let id_with_value = parameterList.children();
+        assert_eq!(id_with_value.len(), 2);
+        let id = id_with_value[0].clone();
+        assert_eq!(id.kind(), NodeKind::Identifier);
+        let new_symbol = match self.eval_node(id_with_value[1].clone()) {
+            Ok(result) => result,
+            Err(e) => return Err(e),
+        };
+        self.symbols.insert(id.string(), new_symbol);
+        return Ok(Structure::Boolean(true));
+    }
+    pub fn eval_if_expression(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
+        todo!()
+    }
+    pub fn eval_cond_expression(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
+        todo!()
+    }
+
+    pub fn eval_parameters(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
+        todo!()
+    }
+
+    pub fn eval_expression(&mut self, node: ASTNode) -> Result<Structure, EvaluationError> {
+        assert_eq!(node.kind(), NodeKind::Expression);
+        let children = node.children();
+        assert_eq!(children.len(), 2);
+        let first_child = children[0].clone();
+        if (first_child.kind() == NodeKind::Identifier) {
+            if (first_child.string() == "lambda") {
+            return self.eval_lambda_expression(node);
+            } else if (first_child.string() == "let") {
+            return self.eval_let_expression(node);
+            } else if (first_child.string() == "if") {
+            return self.eval_if_expression(node);
+            } else if (first_child.string() == "cond") {
+            return self.eval_cond_expression(node);
+            }
+        }
+
+        let function_node = match self.eval_node(first_child) {
+            Ok(result) => result,
+            Err(e) => return Err(e),
+        };
+        let params = match self.eval_parameters(children[1].clone()) {
+            Ok(result) => result,
+            Err(e) => return Err(e),
+        };
+        let function = match function_node {
+            Structure::Function(callable) => callable,
+            _ => panic!()
+        };
+        return Ok(function(node, params));
+    }
+
+    pub fn eval_identifier(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
+        let str = node.string();
+        if (str == "true") {
+            return Ok(Structure::Boolean(true))
+        } else if (str == "false") {
+            return Ok(Structure::Boolean(false))
+        }
+
+        let result = self.symbols.get(&str);
+        match result {
+            Some(structure) => Ok(structure.clone()),
+            None => Err(EvaluationError { message: format!("undeclared identifier: {}", str) })
+        }
+    }
+
+    pub fn eval_literal(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
+        todo!()
+
+    }
+
+    pub fn eval_program(&mut self, node: ASTNode) -> Result<Structure, EvaluationError> {
+        let mut ret = Ok(Structure::new());
+        assert_eq!(node.kind(), NodeKind::Program);
+        for exp in node.children() {
+            ret = self.eval_node(exp.clone());
+        }
+        return ret;
     }
 }
 
@@ -111,7 +212,7 @@ mod tests {
 
     #[test]
     fn test_basic_math() {
-        let e = Evaluator::new();
+        let mut e = Evaluator::new();
         CHECK_MATH_1!(e, +, 4, 4);
         CHECK_MATH_2!(e, +, 4, 3, 7);
         CHECK_MATH_2!(e, +, 34.2, 5, 39.2);

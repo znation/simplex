@@ -16,7 +16,7 @@ use evaluator::Evaluator;
 
 fn main() -> Result<(), EvaluationError> {
     let count = env::args().count();
-    let evaluator = Evaluator::new();
+    let mut evaluator = Evaluator::new();
     if count > 1 {
         // skip 1 because that's the executable name
         let results = env::args().skip(1).map(|argument| {
