@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::astinput::ASTInput;
 use crate::errors::ParseError;
 
@@ -21,24 +23,26 @@ pub struct ASTNode {
 
 impl ASTNode {
     pub fn parse_program(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
-        let mut ret = ASTNode {
-            kind: NodeKind::Program,
-            value: ASTValue::Children(Vec::new()),
-            line: input.line(),
-            col: input.col(),
-        };
-
+        let kind = NodeKind::Program;
+        let line = input.line();
+        let col = input.col();
+        let mut children = Vec::new();
         match ASTNode::parse_expression(input) {
-            Ok(v) => ret.children().push(v),
+            Ok(v) => children.push(v),
             Err(e) => return Err(e),
         }
         if input.size() > 0 {
             match ASTNode::parse_program(input) {
-                Ok(v) => ret.children().push(v),
+                Ok(v) => children.push(v),
                 Err(e) => return Err(e),
             }
         }
-        Ok(ret)
+        Ok(ASTNode {
+            kind,
+            value: ASTValue::Children(children),
+            line,
+            col,
+        })
     }
 
     pub fn parse_expression(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
@@ -124,9 +128,14 @@ impl ASTNode {
         })
     }
     pub fn parse_parameter_list(&mut self, input: &mut ASTInput) -> Result<(), ParseError> {
+        let mut new_children = Vec::new();
         match ASTNode::parse_expression(input) {
-            Ok(v) => self.children().push(v),
+            Ok(v) => new_children.push(v),
             Err(e) => return Err(e),
+        }
+        match &mut self.value {
+            ASTValue::Children(children) => children.extend(new_children),
+            _ => panic!(),
         }
 
         match ASTNode::parse_optional_whitespace(input) {
@@ -386,33 +395,12 @@ impl ASTNode {
         }
     }
 
-    pub fn to_string(&mut self) -> String {
-        let mut ss = String::new();
-        // unsafe because of static mutable INDENT_LEVEL
-        unsafe {
-            assert!(INDENT_LEVEL >= 0);
-            for _i in 0..INDENT_LEVEL {
-                ss.push(' ');
-            }
-            let kind = format!("{:#?}", self.kind());
-            ss.push_str(&kind);
-            ss.push('\n');
-            INDENT_LEVEL += 1;
-            for child in self.children() {
-                let child_str = child.to_string();
-                ss.push_str(&child_str);
-            }
-            INDENT_LEVEL -= 1;
-        }
-        ss
-    }
-
     pub fn kind(&self) -> NodeKind {
         self.kind
     }
 
-    pub fn children(&mut self) -> &mut Vec<ASTNode> {
-        match &mut self.value {
+    pub fn children(&self) -> &Vec<ASTNode> {
+        match &self.value {
             ASTValue::Children(children) => children,
             _ => panic!(),
         }
@@ -476,6 +464,29 @@ impl ASTNode {
         }
         input.advance(token_size);
         Ok(())
+    }
+}
+
+impl Display for ASTNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut ss = String::new();
+        // unsafe because of static mutable INDENT_LEVEL
+        unsafe {
+            assert!(INDENT_LEVEL >= 0);
+            for _i in 0..INDENT_LEVEL {
+                ss.push(' ');
+            }
+            let kind = format!("{:#?}", self.kind());
+            ss.push_str(&kind);
+            ss.push('\n');
+            INDENT_LEVEL += 1;
+            for child in self.children() {
+                let child_str = child.to_string();
+                ss.push_str(&child_str);
+            }
+            INDENT_LEVEL -= 1;
+        }
+        write!(f, "{}", ss)
     }
 }
 
