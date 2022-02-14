@@ -485,89 +485,88 @@ fn is_whitespace(c: char) -> bool {
 
 static mut INDENT_LEVEL: i64 = 0;
 
-
 #[cfg(test)]
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
 
-fn whitespaceVariations(input: Vec<String>) -> Vec<String> {
-  // inserts whitespace before, after, and before/after
-  let mut ret = Vec::new();
-  for str in input {
-    ret.push(str.clone());
-    ret.push(format!("  {}", str.clone()));
-    ret.push(format!("{}  ", str.clone()));
-    ret.push(format!(" {} ", str));
-  }
-  return ret;
-}
-  fn identifiers() -> Vec<String> { vec![
-      "identifier",
-      "foo",
-      "@#*&%&$#",
-      "...",
-      "💩"
-  ].iter().map(|x| x.to_string()).collect() }
+    fn whitespaceVariations(input: Vec<String>) -> Vec<String> {
+        // inserts whitespace before, after, and before/after
+        let mut ret = Vec::new();
+        for str in input {
+            ret.push(str.clone());
+            ret.push(format!("  {}", str.clone()));
+            ret.push(format!("{}  ", str.clone()));
+            ret.push(format!(" {} ", str));
+        }
+        return ret;
+    }
+    fn identifiers() -> Vec<String> {
+        vec!["identifier", "foo", "@#*&%&$#", "...", "💩"]
+            .iter()
+            .map(|x| x.to_string())
+            .collect()
+    }
 
-  fn strings() -> Vec<String> { vec![
-      "'foo bar'",
-      "'&\"\\'+~💩$'"
-  ].iter().map(|x| x.to_string()).collect() }
+    fn strings() -> Vec<String> {
+        vec!["'foo bar'", "'&\"\\'+~💩$'"]
+            .iter()
+            .map(|x| x.to_string())
+            .collect()
+    }
 
-  fn integers() -> Vec<String> { vec![
-      "0",
-      "1",
-      "928453821"
-  ].iter().map(|x| x.to_string()).collect() }
+    fn integers() -> Vec<String> {
+        vec!["0", "1", "928453821"]
+            .iter()
+            .map(|x| x.to_string())
+            .collect()
+    }
 
-  fn floats() -> Vec<String> { vec![
-      "0.23592",
-      "29384."
-  ].iter().map(|x| x.to_string()).collect() }
+    fn floats() -> Vec<String> {
+        vec!["0.23592", "29384."]
+            .iter()
+            .map(|x| x.to_string())
+            .collect()
+    }
 
-  fn literals() -> Vec<String> {
-    let mut ret = Vec::new();
-    ret.extend(strings());
-    ret.extend(integers());
-    ret.extend(floats());
-    ret
-  }
+    fn literals() -> Vec<String> {
+        let mut ret = Vec::new();
+        ret.extend(strings());
+        ret.extend(integers());
+        ret.extend(floats());
+        ret
+    }
 
-  fn expressions() -> Vec<String> {
-  let mut ret: Vec<String> = vec![
-    "( + 3 4)",
-    " (  +  3  4  ) ",
-    "(- 1.5)",
-    "(* (- 1.5) 2)",
-  ].iter().map(|x| x.to_string()).collect();
-  ret.extend(whitespaceVariations(identifiers()));
-  ret.extend(whitespaceVariations(literals()));
-  ret
-  }
+    fn expressions() -> Vec<String> {
+        let mut ret: Vec<String> = vec!["( + 3 4)", " (  +  3  4  ) ", "(- 1.5)", "(* (- 1.5) 2)"]
+            .iter()
+            .map(|x| x.to_string())
+            .collect();
+        ret.extend(whitespaceVariations(identifiers()));
+        ret.extend(whitespaceVariations(literals()));
+        ret
+    }
 
-  fn programs() -> Vec<String> {
-      let mut ret = expressions();
-      for i in 0..expressions().iter().count()-1 {
-          let item1 = ret[i].clone();
-          let item2 = ret[i+1].clone();
-          let combined = item1 + " " + &item2;
-          ret.push(combined);
-      }
-      ret
-  }
-
+    fn programs() -> Vec<String> {
+        let mut ret = expressions();
+        for i in 0..expressions().iter().count() - 1 {
+            let item1 = ret[i].clone();
+            let item2 = ret[i + 1].clone();
+            let combined = item1 + " " + &item2;
+            ret.push(combined);
+        }
+        ret
+    }
 
     #[test]
-  fn testParseProgram() {
-    for str in programs() {
-      let mut input = ASTInput::from_str(&str);
-      let result = ASTNode::parse_program(&mut input);
-      match result {
-        Ok(node) => assert_eq!(node.kind(), NodeKind::Program),
-        Err(_) => assert!(false)
+    fn testParseProgram() {
+        for str in programs() {
+            let mut input = ASTInput::from_str(&str);
+            let result = ASTNode::parse_program(&mut input);
+            match result {
+                Ok(node) => assert_eq!(node.kind(), NodeKind::Program),
+                Err(_) => assert!(false),
+            }
+        }
     }
-    }
-  }
-
 }
