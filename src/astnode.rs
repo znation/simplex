@@ -551,7 +551,7 @@ fn whitespaceVariations(input: Vec<String>) -> Vec<String> {
       for i in 0..expressions().iter().count()-1 {
           let item1 = ret[i].clone();
           let item2 = ret[i+1].clone();
-          let combined = item1 + &item2;
+          let combined = item1 + " " + &item2;
           ret.push(combined);
       }
       ret
@@ -569,4 +569,5 @@ fn whitespaceVariations(input: Vec<String>) -> Vec<String> {
     }
     }
   }
+
 }

@@ -7,6 +7,7 @@ pub struct ASTInput {
 
 impl ASTInput {
     pub fn from_str(input: &str) -> ASTInput {
+        // println!("DEBUG: creating ASTInput from {}", input);
         ASTInput {
             current: input.to_string(),
             line: 1,
