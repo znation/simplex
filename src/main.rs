@@ -42,16 +42,16 @@ fn main() -> Result<(), EvaluationError> {
     // Read an expression from stdin
     let mut input = String::new();
     let result = io::stdin().read_to_string(&mut input);
-    if result.is_err() {
+    if let Err(e) = result {
         return Err(EvaluationError {
-            message: result.unwrap_err().to_string(),
+            message: e.to_string(),
         });
     }
     let evaluation_result = evaluator.eval(input);
-    if evaluation_result.is_err() {
-        return Err(evaluation_result.unwrap_err());
+    match evaluation_result {
+        Ok(value) => println!("{}", value),
+        Err(e) => return Err(e),
     }
-    println!("{}", evaluation_result.unwrap());
     Ok(())
 
     //}

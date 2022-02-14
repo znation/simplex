@@ -169,10 +169,10 @@ impl ASTNode {
         } else {
             ASTNode::parse_number(input)
         };
-        if result.is_err() {
-            return Err(result.unwrap_err());
-        }
-        let value = vec![result.unwrap()];
+        let value = match result {
+            Err(e) => return Err(e),
+            _ => vec![result.unwrap()],
+        };
         Ok(ASTNode {
             kind,
             value: ASTValue::Children(value),
