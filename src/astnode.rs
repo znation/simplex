@@ -62,7 +62,10 @@ impl ASTNode {
         let next = input.peek();
         let ret = if next == '(' {
             let mut children = Vec::new();
-            ASTNode::expect(kind, input, "(");
+            match ASTNode::expect(kind, input, "(") {
+                Ok(_) => (),
+                Err(e) => return Err(e),
+            }
             match ASTNode::parse_expression(input) {
                 Ok(v) => children.push(v),
                 Err(e) => return Err(e),
@@ -75,7 +78,10 @@ impl ASTNode {
                 Ok(_) => (),
                 Err(e) => return Err(e),
             }
-            ASTNode::expect(kind, input, ")");
+            match ASTNode::expect(kind, input, ")") {
+                Ok(_) => (),
+                Err(e) => return Err(e),
+            }
             Ok(ASTNode {
                 kind,
                 value: ASTValue::Children(children),
@@ -96,14 +102,17 @@ impl ASTNode {
     pub fn parse_optional_parameter_list(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
         let kind = NodeKind::OptionalParameterList;
         let value = if input.peek() != ')' {
-            let mut parameterList = ASTNode {
+            let mut parameter_list = ASTNode {
                 kind: NodeKind::ParameterList,
                 value: ASTValue::Children(Vec::new()),
                 line: input.line(),
                 col: input.col(),
             };
-            parameterList.parse_parameter_list(input);
-            vec![parameterList]
+            match parameter_list.parse_parameter_list(input) {
+                Ok(_) => (),
+                Err(e) => return Err(e),
+            }
+            vec![parameter_list]
         } else {
             Vec::new()
         };
@@ -176,13 +185,13 @@ impl ASTNode {
 
         // read digits until whitespace or decimal
         let mut ss = String::new();
-        let mut isFloat = false;
-        let inputLen = input.size();
-        for i in 0..inputLen {
+        let mut is_float = false;
+        let input_len = input.size();
+        for i in 0..input_len {
             let next = input.peek();
             if i > 0 && next == '.' {
                 ss.push(next);
-                isFloat = true;
+                is_float = true;
             } else {
                 if is_whitespace(next) || next == ')' {
                     // number is done
@@ -207,7 +216,7 @@ impl ASTNode {
         let result = ss;
         let line = input.line();
         let col = input.col();
-        if isFloat {
+        if is_float {
             kind = NodeKind::FloatingPoint;
             match result.parse::<f64>() {
                 Ok(value) => Ok(ASTNode {
@@ -316,12 +325,15 @@ impl ASTNode {
         let line = input.line();
         let col = input.col();
         let mut ss = String::new();
-        let mut foundEndOfString = false;
-        ASTNode::expect(kind, input, "'");
+        let mut found_end_of_string = false;
+        match ASTNode::expect(kind, input, "'") {
+            Ok(_) => (),
+            Err(e) => return Err(e),
+        }
         while input.size() != 0 {
             let mut next = input.peek();
             if next == '\'' {
-                foundEndOfString = true;
+                found_end_of_string = true;
                 break;
             }
             if next == '\\' {
@@ -342,7 +354,7 @@ impl ASTNode {
             ss.push(next);
             input.next();
         }
-        if !foundEndOfString {
+        if !found_end_of_string {
             return Err(ParseError::from(
                 kind,
                 "end of string marker (')",
@@ -352,7 +364,10 @@ impl ASTNode {
             ));
         }
 
-        ASTNode::expect(kind, input, "'");
+        match ASTNode::expect(kind, input, "'") {
+            Ok(_) => (),
+            Err(e) => return Err(e),
+        }
         Ok(ASTNode {
             kind,
             value: ASTValue::String(ss),
@@ -410,7 +425,7 @@ impl ASTNode {
         }
     }
 
-    pub fn floatingPoint(&self) -> f64 {
+    pub fn floating_point(&self) -> f64 {
         match self.value {
             ASTValue::Double(d) => d,
             _ => panic!(),
@@ -437,9 +452,9 @@ impl ASTNode {
         input: &mut ASTInput,
         token: S,
     ) -> Result<(), ParseError> {
-        let tokenStr = token.as_ref();
-        let tokenSize = tokenStr.chars().count();
-        if tokenSize > input.size() {
+        let token_str = token.as_ref();
+        let token_size = token_str.chars().count();
+        if token_size > input.size() {
             let remaining = input.get();
             return Err(ParseError::from(
                 kind,
@@ -449,8 +464,8 @@ impl ASTNode {
                 input.col(),
             ));
         }
-        let should_be_token = &input.get()[0..tokenSize];
-        if should_be_token != tokenStr {
+        let should_be_token = &input.get()[0..token_size];
+        if should_be_token != token_str {
             return Err(ParseError::from(
                 kind,
                 token,
@@ -459,7 +474,7 @@ impl ASTNode {
                 input.col(),
             ));
         }
-        input.advance(tokenSize);
+        input.advance(token_size);
         Ok(())
     }
 }
@@ -490,7 +505,7 @@ mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
 
-    fn whitespaceVariations(input: Vec<String>) -> Vec<String> {
+    fn whitespace_variations(input: Vec<String>) -> Vec<String> {
         // inserts whitespace before, after, and before/after
         let mut ret = Vec::new();
         for str in input {
@@ -542,8 +557,8 @@ mod tests {
             .iter()
             .map(|x| x.to_string())
             .collect();
-        ret.extend(whitespaceVariations(identifiers()));
-        ret.extend(whitespaceVariations(literals()));
+        ret.extend(whitespace_variations(identifiers()));
+        ret.extend(whitespace_variations(literals()));
         ret
     }
 
@@ -559,7 +574,7 @@ mod tests {
     }
 
     #[test]
-    fn testParseProgram() {
+    fn test_parse_program() {
         for str in programs() {
             let mut input = ASTInput::from_str(&str);
             let result = ASTNode::parse_program(&mut input);
@@ -571,7 +586,7 @@ mod tests {
     }
 
     #[test]
-    fn testParseExpression() {
+    fn test_parse_expression() {
         for str in expressions() {
             let mut input = ASTInput::from_str(&str);
             let result = ASTNode::parse_expression(&mut input);
@@ -592,7 +607,7 @@ mod tests {
     }
 
     #[test]
-    fn testParseIdentifier() {
+    fn test_parse_identifier() {
         for str in identifiers() {
             let mut input = ASTInput::from_str(&str);
             let result = ASTNode::parse_identifier(&mut input);
@@ -604,7 +619,7 @@ mod tests {
     }
 
     #[test]
-    fn testParseLiteral() {
+    fn test_parse_literal() {
         for str in literals() {
             let mut input = ASTInput::from_str(&str);
             let result = ASTNode::parse_literal(&mut input);
@@ -616,7 +631,7 @@ mod tests {
     }
 
     #[test]
-    fn testParseString() {
+    fn test_parse_string() {
         for str in strings() {
             let mut input = ASTInput::from_str(&str);
             let result = ASTNode::parse_string(&mut input);
@@ -628,7 +643,7 @@ mod tests {
     }
 
     #[test]
-    fn testParseNumber() {
+    fn test_parse_number() {
         for str in floats() {
             let mut input = ASTInput::from_str(&str);
             let result = ASTNode::parse_number(&mut input);
