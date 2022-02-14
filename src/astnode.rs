@@ -569,4 +569,81 @@ mod tests {
             }
         }
     }
+
+    #[test]
+  fn testParseExpression() {
+    for str in expressions() {
+        let mut input = ASTInput::from_str(&str);
+        let result = ASTNode::parse_expression(&mut input);
+        match result {
+            // resulting NodeKind could be any of:
+            // * expression
+            // * literal
+            // * identifier
+            // due to simplified parse tree structure (useless expressions are skipped).
+                Ok(node) => assert!(node.kind == NodeKind::Expression ||
+                                            node.kind == NodeKind::Literal ||
+                                            node.kind == NodeKind::Identifier),
+                Err(_) => assert!(false),
+        }
+    }
+  }
+
+    #[test]
+  fn testParseIdentifier() {
+    for str in identifiers() {
+        let mut input = ASTInput::from_str(&str);
+        let result = ASTNode::parse_identifier(&mut input);
+            match result {
+                Ok(node) => assert_eq!(node.kind(), NodeKind::Identifier),
+                Err(_) => assert!(false),
+            }
+    }
+  }
+
+    #[test]
+  fn testParseLiteral() {
+    for str in literals() {
+        let mut input = ASTInput::from_str(&str);
+        let result = ASTNode::parse_literal(&mut input);
+            match result {
+                Ok(node) => assert_eq!(node.kind(), NodeKind::Literal),
+                Err(_) => assert!(false),
+            }
+    }
+  }
+
+
+    #[test]
+  fn testParseString() {
+    for str in strings() {
+        let mut input = ASTInput::from_str(&str);
+        let result = ASTNode::parse_string(&mut input);
+            match result {
+                Ok(node) => assert_eq!(node.kind(), NodeKind::String),
+                Err(_) => assert!(false),
+            }
+    }
+  }
+
+    #[test]
+  fn testParseNumber() {
+    for str in floats() {
+        let mut input = ASTInput::from_str(&str);
+        let result = ASTNode::parse_number(&mut input);
+            match result {
+                Ok(node) => assert_eq!(node.kind(), NodeKind::FloatingPoint),
+                Err(_) => assert!(false),
+            }
+    }
+    for str in integers() {
+        let mut input = ASTInput::from_str(&str);
+        let result = ASTNode::parse_number(&mut input);
+            match result {
+                Ok(node) => assert_eq!(node.kind(), NodeKind::Integer),
+                Err(_) => assert!(false),
+            }
+    }
+  }
+
 }
