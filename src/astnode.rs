@@ -499,7 +499,7 @@ mod tests {
             ret.push(format!("{}  ", str.clone()));
             ret.push(format!(" {} ", str));
         }
-        return ret;
+        ret
     }
     fn identifiers() -> Vec<String> {
         vec!["identifier", "foo", "@#*&%&$#", "...", "💩"]
@@ -549,7 +549,7 @@ mod tests {
 
     fn programs() -> Vec<String> {
         let mut ret = expressions();
-        for i in 0..expressions().iter().count() - 1 {
+        for i in 0..expressions().len() - 1 {
             let item1 = ret[i].clone();
             let item2 = ret[i + 1].clone();
             let combined = item1 + " " + &item2;
