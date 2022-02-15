@@ -1,6 +1,8 @@
 use std::{fmt, collections::HashMap};
 
-use crate::astnode::ASTNode;
+use crate::{astnode::ASTNode, errors::EvaluationError};
+
+pub type SymbolTable = HashMap<String, Structure>;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum StructureKind {
@@ -16,13 +18,28 @@ pub enum StructureKind {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct Function {
+    pub outerSymbols: SymbolTable,
+    pub parameterList: Vec<ASTNode>,
+    pub function: fn(outerSymbols: SymbolTable, parameterList: Vec<ASTNode>, params: Vec<Structure>) -> Result<Structure, EvaluationError>
+}
+
+impl Function {
+    pub fn call(&self, params: Vec<Structure>) -> Result<Structure, EvaluationError> {
+        (self.function)(self.outerSymbols.clone(),
+                        self.parameterList.clone(),
+                        params)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum Structure {
     Boolean(bool),
     Byte(u8),
     Cons(Box<(Structure,Structure)>),
     Dict(HashMap<String, Structure>),
     FloatingPoint(f64),
-    Function(fn(ASTNode, Structure) -> Structure),
+    Function(Function),
     Integer(i64),
     Invalid,
     Nil,
