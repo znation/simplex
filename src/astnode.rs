@@ -11,13 +11,21 @@ enum ASTValue {
     Children(Vec<ASTNode>),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct ASTNode {
     kind: NodeKind,
     value: ASTValue,
 
     line: i64,
     col: i64,
+}
+
+impl PartialEq for ASTNode {
+    fn eq(&self, other: &Self) -> bool {
+        // ignore line and col numbers
+        self.kind == other.kind &&
+        self.value == other.value
+    }
 }
 
 impl ASTNode {

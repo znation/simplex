@@ -6,10 +6,10 @@ pub struct ASTInput {
 }
 
 impl ASTInput {
-    pub fn from_str(input: &str) -> ASTInput {
+    pub fn from_str<S: AsRef<str>>(input: S) -> ASTInput {
         // println!("DEBUG: creating ASTInput from {}", input);
         ASTInput {
-            current: input.to_string(),
+            current: input.as_ref().to_string(),
             line: 1,
             col: 1,
         }
