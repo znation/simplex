@@ -142,16 +142,120 @@ impl Structure {
             _ => panic!(),
         }
     }
+
+    pub fn byte(&self) -> u8 {
+        match self {
+            Structure::Byte(b) => *b,
+            _ => panic!()
+        }
+    }
+
+    pub fn char(&self) -> char {
+        match self {
+            Structure::Char(c) => *c,
+            _ => panic!()
+        }
+    }
+
+    pub fn string(&self) -> String {
+        let cons = match self {
+            Structure::Cons(b) => &*b,
+            _ => panic!()
+        };
+        let car = &cons.0;
+        let cdr = &cons.1;
+        if car.kind() == StructureKind::Nil {
+            assert_eq!(cdr.kind(), StructureKind::Nil);
+            "".to_string()
+        } else {
+            assert_eq!(car.kind(), StructureKind::Char);
+            if cdr.kind() == StructureKind::Nil {
+                car.char().to_string()
+            } else {
+                car.char().to_string() + &cdr.string()
+            }
+        }
+    }
+}
+
+fn fmt_dict(d: &HashMap<String, Structure>) -> String {
+    let mut ret = String::new();
+    ret += "(dict ";
+    for (k,v) in d {
+        ret += "\n";
+        ret += "    '";
+        ret += k;
+        ret += "' ";
+        ret += &v.to_string();
+    }
+    ret += ")";
+    ret
 }
 
 impl fmt::Display for Structure {
+
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "TODO: implement fmt for Structure")
+        match self {
+            Structure::Boolean(b) => write!(f, "{}", b.to_string()),
+            Structure::Byte(b) => write!(f, "{}", b.to_string()),
+            Structure::Char(c) => write!(f, "{}", c.to_string()),
+            Structure::Cons(c) => write!(f, "(cons {} {})", c.0, c.1),
+            Structure::Dict(d) => write!(f, "{}", fmt_dict(d)),
+            Structure::FloatingPoint(v) => write!(f, "{}", v),
+            Structure::Function(_) => todo!(),
+            Structure::Integer(i) => write!(f, "{}", i),
+            Structure::Invalid => panic!(),
+            Structure::Nil => write!(f, "()"),
+        }
     }
 }
 
 impl Default for Structure {
     fn default() -> Self {
         Structure::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+
+    #[test]
+    fn boolean_structure() {
+        let bools = vec!{ false, true };
+        for b in bools {
+            let s = Structure::Boolean(b);
+            assert_eq!(s.kind(), StructureKind::Boolean);
+            assert_eq!(s.boolean(), b);
+        }
+        assert_eq!(Structure::Boolean(true).to_string(), "true");
+        assert_eq!(Structure::Boolean(false).to_string(), "false");
+    }
+
+    #[test]
+    fn byte_structure() {
+        let bytes: Vec<u8> = vec!{ 0, 1, 2, 254, 255 };
+        for b in bytes {
+            let s = Structure::Byte(b);
+            assert_eq!(s.kind(), StructureKind::Byte);
+            assert_eq!(s.byte(), b);
+            assert_eq!(b.to_string(), s.to_string());
+        }
+    }
+
+    #[test]
+    fn cons_structure() {
+        let strings = vec!{
+            "".to_string(),
+            "a".to_string(),
+            "ab".to_string(),
+            "abc".to_string(),
+        };
+        for string in strings {
+            let s = Structure::from_string(string.clone());
+            assert_eq!(s.kind(), StructureKind::Cons);
+            assert_eq!(s.string(), string);
+        }
     }
 }
