@@ -24,9 +24,21 @@ mod tests {
             Ok(_) => assert!(false),
             Err(_) => (),
         }
-        assert_eq!(Parser::parse("(let asdf 3)").unwrap().kind(), NodeKind::Program);
-        assert_eq!(Parser::parse("(let asdf' 3)").unwrap().kind(), NodeKind::Program);
-        assert_eq!(Parser::parse("(+ 3 4)(- 3 4)"), Parser::parse(" ( + 3 4)\n\r\n( - 3 4  )\n"));
-        assert_eq!(Parser::parse("'\nasdf\r\n'").unwrap().children()[0].children()[0].string(), "\nasdf\r\n");
+        assert_eq!(
+            Parser::parse("(let asdf 3)").unwrap().kind(),
+            NodeKind::Program
+        );
+        assert_eq!(
+            Parser::parse("(let asdf' 3)").unwrap().kind(),
+            NodeKind::Program
+        );
+        assert_eq!(
+            Parser::parse("(+ 3 4)(- 3 4)"),
+            Parser::parse(" ( + 3 4)\n\r\n( - 3 4  )\n")
+        );
+        assert_eq!(
+            Parser::parse("'\nasdf\r\n'").unwrap().children()[0].children()[0].string(),
+            "\nasdf\r\n"
+        );
     }
 }

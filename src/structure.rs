@@ -139,21 +139,21 @@ impl Structure {
     pub fn byte(&self) -> u8 {
         match self {
             Structure::Byte(b) => *b,
-            _ => panic!()
+            _ => panic!(),
         }
     }
 
     pub fn char(&self) -> char {
         match self {
             Structure::Char(c) => *c,
-            _ => panic!()
+            _ => panic!(),
         }
     }
 
     pub fn string(&self) -> String {
         let cons = match self {
             Structure::Cons(b) => &*b,
-            _ => panic!()
+            _ => panic!(),
         };
         let car = &cons.0;
         let cdr = &cons.1;
@@ -173,7 +173,7 @@ impl Structure {
     pub fn dict(&self) -> HashMap<String, Structure> {
         match self {
             Structure::Dict(d) => d.clone(),
-            _ => panic!()
+            _ => panic!(),
         }
     }
 }
@@ -181,7 +181,7 @@ impl Structure {
 fn fmt_dict(d: &HashMap<String, Structure>) -> String {
     let mut ret = String::new();
     ret += "(dict ";
-    for (k,v) in d {
+    for (k, v) in d {
         ret += "\n";
         ret += "    '";
         ret += k;
@@ -193,7 +193,6 @@ fn fmt_dict(d: &HashMap<String, Structure>) -> String {
 }
 
 impl fmt::Display for Structure {
-
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Structure::Boolean(b) => write!(f, "{}", b.to_string()),
@@ -223,7 +222,7 @@ mod tests {
 
     #[test]
     fn boolean_structure() {
-        let bools = vec!{ false, true };
+        let bools = vec![false, true];
         for b in bools {
             let s = Structure::Boolean(b);
             assert_eq!(s.kind(), StructureKind::Boolean);
@@ -235,7 +234,7 @@ mod tests {
 
     #[test]
     fn byte_structure() {
-        let bytes: Vec<u8> = vec!{ 0, 1, 2, 254, 255 };
+        let bytes: Vec<u8> = vec![0, 1, 2, 254, 255];
         for b in bytes {
             let s = Structure::Byte(b);
             assert_eq!(s.kind(), StructureKind::Byte);
@@ -246,12 +245,12 @@ mod tests {
 
     #[test]
     fn cons_structure() {
-        let strings = vec!{
+        let strings = vec![
             "".to_string(),
             "a".to_string(),
             "ab".to_string(),
             "abc".to_string(),
-        };
+        ];
         for string in strings {
             let s = Structure::from_string(string.clone());
             assert_eq!(s.kind(), StructureKind::Cons);

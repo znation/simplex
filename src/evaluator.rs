@@ -154,14 +154,17 @@ impl Evaluator {
             let result = self.eval_node(parameters[i].clone());
             let condition = match result {
                 Ok(s) => s.boolean(),
-                Err(e) => return Err(e)
+                Err(e) => return Err(e),
             };
             if condition {
-                return self.eval_node(parameters[i+1].clone());
+                return self.eval_node(parameters[i + 1].clone());
             }
             i += 2;
         }
-        Err(EvaluationError { message: "`cond` expression did not return a value (no condition evaluated to true)".to_string() })
+        Err(EvaluationError {
+            message: "`cond` expression did not return a value (no condition evaluated to true)"
+                .to_string(),
+        })
     }
 
     pub fn eval_parameters(&mut self, node: ASTNode) -> Result<Vec<Structure>, EvaluationError> {

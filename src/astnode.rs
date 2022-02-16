@@ -23,8 +23,7 @@ pub struct ASTNode {
 impl PartialEq for ASTNode {
     fn eq(&self, other: &Self) -> bool {
         // ignore line and col numbers
-        self.kind == other.kind &&
-        self.value == other.value
+        self.kind == other.kind && self.value == other.value
     }
 }
 
