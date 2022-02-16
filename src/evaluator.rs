@@ -12,18 +12,21 @@ use crate::structure::Structure;
 use crate::structure::StructureKind;
 use crate::structure::SymbolTable;
 
-fn dictOfParams(parameterList: &Vec<ASTNode>, parameterValues: &Vec<Structure>) -> HashMap<String, Structure> {
-  let mut ret = HashMap::new();
-  let nParams = parameterList.len() - 1;
-  let nValues = parameterValues.len();
-  assert_eq!(nParams, nValues);
-  for i in 0..nParams {
-    let param = &parameterList[i];
-    assert_eq!(param.kind(), NodeKind::Identifier);
-    let value = parameterValues[i].clone();
-    ret.insert(param.string(), value);
-  }
-  ret
+fn dictOfParams(
+    parameterList: &Vec<ASTNode>,
+    parameterValues: &Vec<Structure>,
+) -> HashMap<String, Structure> {
+    let mut ret = HashMap::new();
+    let nParams = parameterList.len() - 1;
+    let nValues = parameterValues.len();
+    assert_eq!(nParams, nValues);
+    for i in 0..nParams {
+        let param = &parameterList[i];
+        assert_eq!(param.kind(), NodeKind::Identifier);
+        let value = parameterValues[i].clone();
+        ret.insert(param.string(), value);
+    }
+    ret
 }
 
 pub struct Evaluator {
@@ -80,16 +83,16 @@ impl Evaluator {
         assert_eq!(children[1].kind(), NodeKind::OptionalParameterList);
         let parameterList = children[1].children()[0].children().clone();
         let function_body = FunctionBody::Lambda(|node, outerSymbols, parameterList, params| {
-                let body = parameterList[parameterList.len()-1].clone();
-                let mut symbols = outerSymbols.clone();
-                symbols.extend(dictOfParams(&parameterList, &params));
-                let mut e = Evaluator { symbols };
-                return e.eval_node(body);
-            });
+            let body = parameterList[parameterList.len() - 1].clone();
+            let mut symbols = outerSymbols.clone();
+            symbols.extend(dictOfParams(&parameterList, &params));
+            let mut e = Evaluator { symbols };
+            return e.eval_node(body);
+        });
         let function = Function {
             outerSymbols: self.symbols.clone(),
             parameterList: parameterList,
-            function: function_body 
+            function: function_body,
         };
         Ok(Structure::Function(function))
     }
@@ -143,7 +146,7 @@ impl Evaluator {
         if (node.kind() == NodeKind::OptionalParameterList) {
             let children = node.children();
             if (children.len() == 0) {
-                return Ok(Vec::new())
+                return Ok(Vec::new());
             }
             assert_eq!(children.len(), 1);
             return self.eval_parameters(children[0].clone());
@@ -168,13 +171,13 @@ impl Evaluator {
         let first_child = children[0].clone();
         if (first_child.kind() == NodeKind::Identifier) {
             if (first_child.string() == "lambda") {
-            return self.eval_lambda_expression(node);
+                return self.eval_lambda_expression(node);
             } else if (first_child.string() == "let") {
-            return self.eval_let_expression(node);
+                return self.eval_let_expression(node);
             } else if (first_child.string() == "if") {
-            return self.eval_if_expression(node);
+                return self.eval_if_expression(node);
             } else if (first_child.string() == "cond") {
-            return self.eval_cond_expression(node);
+                return self.eval_cond_expression(node);
             }
         }
 
@@ -188,7 +191,7 @@ impl Evaluator {
         };
         let function = match function_node {
             Structure::Function(callable) => callable,
-            _ => panic!()
+            _ => panic!(),
         };
         return function.call(node, params);
     }
@@ -196,15 +199,17 @@ impl Evaluator {
     pub fn eval_identifier(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
         let str = node.string();
         if (str == "true") {
-            return Ok(Structure::Boolean(true))
+            return Ok(Structure::Boolean(true));
         } else if (str == "false") {
-            return Ok(Structure::Boolean(false))
+            return Ok(Structure::Boolean(false));
         }
 
         let result = self.symbols.get(&str);
         match result {
             Some(structure) => Ok(structure.clone()),
-            None => Err(EvaluationError { message: format!("undeclared identifier: {}", str) })
+            None => Err(EvaluationError {
+                message: format!("undeclared identifier: {}", str),
+            }),
         }
     }
 

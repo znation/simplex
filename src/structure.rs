@@ -1,4 +1,4 @@
-use std::{fmt, collections::HashMap};
+use std::{collections::HashMap, fmt};
 
 use crate::{astnode::ASTNode, errors::EvaluationError};
 
@@ -18,10 +18,16 @@ pub enum StructureKind {
     Nil,
 }
 
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum FunctionBody {
-    Lambda(fn(node: ASTNode, outerSymbols: SymbolTable, parameterList: Vec<ASTNode>, params: Vec<Structure>) -> Result<Structure, EvaluationError>),
+    Lambda(
+        fn(
+            node: ASTNode,
+            outerSymbols: SymbolTable,
+            parameterList: Vec<ASTNode>,
+            params: Vec<Structure>,
+        ) -> Result<Structure, EvaluationError>,
+    ),
     Native(fn(node: ASTNode, params: Vec<Structure>) -> Result<Structure, EvaluationError>),
 }
 
@@ -33,16 +39,28 @@ pub struct Function {
 }
 
 impl Function {
-    pub fn synthetic(function: fn(node: ASTNode, params: Vec<Structure>) -> Result<Structure, EvaluationError>) -> Structure {
-        Structure::Function(Function { outerSymbols: HashMap::new(), parameterList: Vec::new(), function: FunctionBody::Native(function) })
+    pub fn synthetic(
+        function: fn(node: ASTNode, params: Vec<Structure>) -> Result<Structure, EvaluationError>,
+    ) -> Structure {
+        Structure::Function(Function {
+            outerSymbols: HashMap::new(),
+            parameterList: Vec::new(),
+            function: FunctionBody::Native(function),
+        })
     }
 
-    pub fn call(&self, node: ASTNode, params: Vec<Structure>) -> Result<Structure, EvaluationError> {
+    pub fn call(
+        &self,
+        node: ASTNode,
+        params: Vec<Structure>,
+    ) -> Result<Structure, EvaluationError> {
         match self.function {
-            FunctionBody::Lambda(lambda) => lambda(node,
-                        self.outerSymbols.clone(),
-                        self.parameterList.clone(),
-                        params),
+            FunctionBody::Lambda(lambda) => lambda(
+                node,
+                self.outerSymbols.clone(),
+                self.parameterList.clone(),
+                params,
+            ),
             FunctionBody::Native(native) => native(node, params),
         }
     }
@@ -53,7 +71,7 @@ pub enum Structure {
     Boolean(bool),
     Byte(u8),
     Char(char),
-    Cons(Box<(Structure,Structure)>),
+    Cons(Box<(Structure, Structure)>),
     Dict(HashMap<String, Structure>),
     FloatingPoint(f64),
     Function(Function),
@@ -75,7 +93,7 @@ impl Structure {
     }
 
     pub fn from_string(s: String) -> Structure {
-        // create cons from string      
+        // create cons from string
         let len = s.len();
         if (len == 0) {
             Structure::Cons(Box::new((Structure::Nil, Structure::Nil)))
@@ -109,7 +127,7 @@ impl Structure {
     pub fn integer(&self) -> i64 {
         match self {
             Structure::Integer(i) => *i,
-            _ => panic!()
+            _ => panic!(),
         }
     }
 
@@ -117,14 +135,14 @@ impl Structure {
         match self {
             Structure::FloatingPoint(f) => *f,
             Structure::Integer(i) => *i as f64,
-            _ => panic!()
+            _ => panic!(),
         }
     }
 
     pub fn boolean(&self) -> bool {
         match self {
             Structure::Boolean(b) => *b,
-            _ => panic!()
+            _ => panic!(),
         }
     }
 }
