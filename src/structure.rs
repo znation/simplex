@@ -50,11 +50,7 @@ impl Function {
         })
     }
 
-    pub fn call(
-        &self,
-        node: ASTNode,
-        params: Vec<Structure>,
-    ) -> EvaluationResult {
+    pub fn call(&self, node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
         match self.function {
             FunctionBody::Lambda(lambda) => lambda(
                 node,

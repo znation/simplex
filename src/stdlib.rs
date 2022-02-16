@@ -1,8 +1,8 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 use crate::{
     astnode::ASTNode,
-    structure::{Function, Structure, StructureKind, EvaluationResult},
+    structure::{EvaluationResult, Function, Structure, StructureKind},
 };
 
 fn extract_float(n: &Structure) -> f64 {
