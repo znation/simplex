@@ -3,6 +3,7 @@ use std::{collections::HashMap, fmt};
 use crate::{astnode::ASTNode, errors::EvaluationError};
 
 pub type SymbolTable = HashMap<String, Structure>;
+pub type EvaluationResult = Result<Structure, EvaluationError>;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum StructureKind {
@@ -26,9 +27,9 @@ pub enum FunctionBody {
             outerSymbols: SymbolTable,
             parameterList: Vec<ASTNode>,
             params: Vec<Structure>,
-        ) -> Result<Structure, EvaluationError>,
+        ) -> EvaluationResult,
     ),
-    Native(fn(node: ASTNode, params: Vec<Structure>) -> Result<Structure, EvaluationError>),
+    Native(fn(node: ASTNode, params: Vec<Structure>) -> EvaluationResult),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -40,7 +41,7 @@ pub struct Function {
 
 impl Function {
     pub fn synthetic(
-        function: fn(node: ASTNode, params: Vec<Structure>) -> Result<Structure, EvaluationError>,
+        function: fn(node: ASTNode, params: Vec<Structure>) -> EvaluationResult,
     ) -> Structure {
         Structure::Function(Function {
             outer_symbols: HashMap::new(),
@@ -53,7 +54,7 @@ impl Function {
         &self,
         node: ASTNode,
         params: Vec<Structure>,
-    ) -> Result<Structure, EvaluationError> {
+    ) -> EvaluationResult {
         match self.function {
             FunctionBody::Lambda(lambda) => lambda(
                 node,
@@ -99,7 +100,7 @@ impl Structure {
             Structure::Cons(Box::new((Structure::Nil, Structure::Nil)))
         } else {
             let mut chars = s.chars();
-            let car = Structure::Char(chars.nth(0).unwrap());
+            let car = Structure::Char(chars.next().unwrap());
             let cdr = if len == 1 {
                 Structure::Nil
             } else {

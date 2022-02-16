@@ -6,14 +6,15 @@ use crate::errors::EvaluationError;
 
 use crate::parser::Parser;
 use crate::stdlib::Stdlib;
+use crate::structure::EvaluationResult;
 use crate::structure::Function;
 use crate::structure::FunctionBody;
 use crate::structure::Structure;
 use crate::structure::SymbolTable;
 
 fn dict_of_params(
-    parameter_list: &Vec<ASTNode>,
-    parameter_values: &Vec<Structure>,
+    parameter_list: &[ASTNode],
+    parameter_values: &[Structure],
 ) -> HashMap<String, Structure> {
     let mut ret = HashMap::new();
     let n_params = parameter_list.len() - 1;
@@ -55,7 +56,7 @@ impl Evaluator {
         ret
     }
 
-    pub fn eval_node(&mut self, node: ASTNode) -> Result<Structure, EvaluationError> {
+    pub fn eval_node(&mut self, node: ASTNode) -> EvaluationResult {
         match node.kind() {
             crate::astnode::NodeKind::Expression => self.eval_expression(node),
             crate::astnode::NodeKind::Identifier => self.eval_identifier(node),
@@ -65,7 +66,7 @@ impl Evaluator {
         }
     }
 
-    pub fn eval(&mut self, str: String) -> Result<Structure, EvaluationError> {
+    pub fn eval(&mut self, str: String) -> EvaluationResult {
         let node = match Parser::parse(str) {
             Ok(n) => n,
             Err(e) => return Err(EvaluationError::from_parse_error(e)),
@@ -73,7 +74,7 @@ impl Evaluator {
         self.eval_node(node)
     }
 
-    pub fn eval_lambda_expression(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
+    pub fn eval_lambda_expression(&self, node: ASTNode) -> EvaluationResult {
         assert_eq!(node.kind(), NodeKind::Expression);
         let children = node.children();
         assert_eq!(children.len(), 2);
@@ -83,10 +84,10 @@ impl Evaluator {
         let parameter_list = children[1].children()[0].children().clone();
         let function_body = FunctionBody::Lambda(|_node, outer_symbols, parameter_list, params| {
             let body = parameter_list[parameter_list.len() - 1].clone();
-            let mut symbols = outer_symbols.clone();
+            let mut symbols = outer_symbols;
             symbols.extend(dict_of_params(&parameter_list, &params));
             let mut e = Evaluator { symbols };
-            return e.eval_node(body);
+            e.eval_node(body)
         });
         let function = Function {
             outer_symbols: self.symbols.clone(),
@@ -96,7 +97,7 @@ impl Evaluator {
         Ok(Structure::Function(function))
     }
 
-    pub fn eval_let_expression(&mut self, node: ASTNode) -> Result<Structure, EvaluationError> {
+    pub fn eval_let_expression(&mut self, node: ASTNode) -> EvaluationResult {
         assert_eq!(node.kind(), NodeKind::Expression);
         let children = node.children();
         assert_eq!(children.len(), 2);
@@ -115,9 +116,9 @@ impl Evaluator {
             Err(e) => return Err(e),
         };
         self.symbols.insert(id.string(), new_symbol);
-        return Ok(Structure::Boolean(true));
+        Ok(Structure::Boolean(true))
     }
-    pub fn eval_if_expression(&mut self, node: ASTNode) -> Result<Structure, EvaluationError> {
+    pub fn eval_if_expression(&mut self, node: ASTNode) -> EvaluationResult {
         assert_eq!(node.kind(), NodeKind::Expression);
         let children = node.children();
         assert_eq!(children.len(), 2);
@@ -132,19 +133,19 @@ impl Evaluator {
             Err(e) => return Err(e),
         };
         if condition {
-            return self.eval_node(parameters[1].clone());
+            self.eval_node(parameters[1].clone())
         } else {
-            return self.eval_node(parameters[2].clone());
+            self.eval_node(parameters[2].clone())
         }
     }
-    pub fn eval_cond_expression(&self, _node: ASTNode) -> Result<Structure, EvaluationError> {
+    pub fn eval_cond_expression(&self, _node: ASTNode) -> EvaluationResult {
         todo!()
     }
 
     pub fn eval_parameters(&mut self, node: ASTNode) -> Result<Vec<Structure>, EvaluationError> {
         if node.kind() == NodeKind::OptionalParameterList {
             let children = node.children();
-            if children.len() == 0 {
+            if children.is_empty() {
                 return Ok(Vec::new());
             }
             assert_eq!(children.len(), 1);
@@ -160,10 +161,10 @@ impl Evaluator {
                 Err(e) => return Err(e),
             }
         }
-        return Ok(ret);
+        Ok(ret)
     }
 
-    pub fn eval_expression(&mut self, node: ASTNode) -> Result<Structure, EvaluationError> {
+    pub fn eval_expression(&mut self, node: ASTNode) -> EvaluationResult {
         assert_eq!(node.kind(), NodeKind::Expression);
         let children = node.children();
         assert_eq!(children.len(), 2);
@@ -192,10 +193,10 @@ impl Evaluator {
             Structure::Function(callable) => callable,
             _ => panic!(),
         };
-        return function.call(node, params);
+        function.call(node, params)
     }
 
-    pub fn eval_identifier(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
+    pub fn eval_identifier(&self, node: ASTNode) -> EvaluationResult {
         let str = node.string();
         if str == "true" {
             return Ok(Structure::Boolean(true));
@@ -212,7 +213,7 @@ impl Evaluator {
         }
     }
 
-    pub fn eval_literal(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
+    pub fn eval_literal(&self, node: ASTNode) -> EvaluationResult {
         assert_eq!(node.kind(), NodeKind::Literal);
         let children = node.children();
         assert_eq!(children.len(), 1);
@@ -226,13 +227,13 @@ impl Evaluator {
         }
     }
 
-    pub fn eval_program(&mut self, node: ASTNode) -> Result<Structure, EvaluationError> {
+    pub fn eval_program(&mut self, node: ASTNode) -> EvaluationResult {
         let mut ret = Ok(Structure::new());
         assert_eq!(node.kind(), NodeKind::Program);
         for exp in node.children() {
             ret = self.eval_node(exp.clone());
         }
-        return ret;
+        ret
     }
 }
 
