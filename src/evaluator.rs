@@ -7,6 +7,7 @@ use crate::errors::EvaluationError;
 use crate::parser::Parser;
 use crate::stdlib::Stdlib;
 use crate::structure::Function;
+use crate::structure::FunctionBody;
 use crate::structure::Structure;
 use crate::structure::StructureKind;
 use crate::structure::SymbolTable;
@@ -78,16 +79,17 @@ impl Evaluator {
         assert_eq!(children[0].string(), "lambda");
         assert_eq!(children[1].kind(), NodeKind::OptionalParameterList);
         let parameterList = children[1].children()[0].children().clone();
-        let function = Function {
-            outerSymbols: self.symbols.clone(),
-            parameterList: parameterList,
-            function: |outerSymbols, parameterList, params| {
+        let function_body = FunctionBody::Lambda(|node, outerSymbols, parameterList, params| {
                 let body = parameterList[parameterList.len()-1].clone();
                 let mut symbols = outerSymbols.clone();
                 symbols.extend(dictOfParams(&parameterList, &params));
                 let mut e = Evaluator { symbols };
                 return e.eval_node(body);
-            }
+            });
+        let function = Function {
+            outerSymbols: self.symbols.clone(),
+            parameterList: parameterList,
+            function: function_body 
         };
         Ok(Structure::Function(function))
     }
@@ -120,12 +122,29 @@ impl Evaluator {
         todo!()
     }
 
-    pub fn eval_parameters(&self, node: ASTNode) -> Result<Vec<Structure>, EvaluationError> {
-        todo!()
+    pub fn eval_parameters(&mut self, node: ASTNode) -> Result<Vec<Structure>, EvaluationError> {
+        if (node.kind() == NodeKind::OptionalParameterList) {
+            let children = node.children();
+            if (children.len() == 0) {
+                return Ok(Vec::new())
+            }
+            assert_eq!(children.len(), 1);
+            return self.eval_parameters(children[0].clone());
+        }
+
+        assert_eq!(node.kind(), NodeKind::ParameterList);
+        let mut ret = Vec::new();
+        for child in node.children().clone() {
+            let result = self.eval_node(child);
+            match result {
+                Ok(s) => ret.push(s),
+                Err(e) => return Err(e),
+            }
+        }
+        return Ok(ret);
     }
 
     pub fn eval_expression(&mut self, node: ASTNode) -> Result<Structure, EvaluationError> {
-        dbg!("EVALUATING EXPRESSION: {}", node.clone());
         assert_eq!(node.kind(), NodeKind::Expression);
         let children = node.children();
         assert_eq!(children.len(), 2);
@@ -154,7 +173,7 @@ impl Evaluator {
             Structure::Function(callable) => callable,
             _ => panic!()
         };
-        return function.call(params);
+        return function.call(node, params);
     }
 
     pub fn eval_identifier(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
@@ -173,8 +192,17 @@ impl Evaluator {
     }
 
     pub fn eval_literal(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
-        todo!()
-
+        assert_eq!(node.kind(), NodeKind::Literal);
+        let children = node.children();
+        assert_eq!(children.len(), 1);
+        let child = children[0].clone();
+        match child.kind() {
+            NodeKind::FloatingPoint => Ok(Structure::FloatingPoint(child.floating_point())),
+            NodeKind::Integer => Ok(Structure::Integer(child.integer())),
+            NodeKind::Literal => todo!(), // TODO: why isn't Literal used?
+            NodeKind::String => Ok(Structure::from_string(child.string())),
+            _ => panic!(),
+        }
     }
 
     pub fn eval_program(&mut self, node: ASTNode) -> Result<Structure, EvaluationError> {
@@ -202,21 +230,27 @@ mod tests {
         ($e: ident, $op:tt, $p: literal, $expected: literal) => {
             // run the given operator and compare the result in Rust
             let result = $e.eval(stringify!(($op $p)).to_string());
+            dbg!(&result);
             assert!(result.is_ok());
             let type_conversion_result = result.unwrap().unbox();
+            dbg!(&type_conversion_result);
             assert!(type_conversion_result.is_ok());
 
             // comparing all math in f64 should be sufficient
             let unwrapped: f64 = type_conversion_result.unwrap();
+            dbg!(&unwrapped);
             assert_eq!(unwrapped, $expected as f64);
 
             // now, run the same operator and compare within the evaluator
             // (the = expression should return true)
             let result2 = $e.eval(stringify!((= ($op $p) $expected)).to_string());
+            dbg!(&result2);
             assert!(result2.is_ok());
             let type_conversion_result2 = result2.unwrap().unbox();
+            dbg!(&type_conversion_result2);
             assert!(type_conversion_result2.is_ok());
             let unwrapped2: bool = type_conversion_result2.unwrap();
+            dbg!(&unwrapped2);
             assert!(unwrapped2);
         };
     }
