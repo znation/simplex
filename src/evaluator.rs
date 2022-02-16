@@ -146,7 +146,7 @@ impl Evaluator {
         assert_eq!(children[0].string(), "cond");
         assert_eq!(children[1].kind(), NodeKind::OptionalParameterList);
         let parameters = children[1].children()[0].children();
-        if (parameters.len() % 2 != 0) {
+        if parameters.len() % 2 != 0 {
             return Err(EvaluationError { message: "cond must take an even number of parameters (pairs of condition and expression)".to_string() });
         }
         let mut i = 0;

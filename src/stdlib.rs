@@ -107,11 +107,11 @@ fn equals(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
 }
 
 fn lessthan(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
-    let paramsSize = params.len();
-    assert_eq!(paramsSize, 2);
+    let params_size = params.len();
+    assert_eq!(params_size, 2);
     let reference = params[0].clone();
     let compare = params[1].clone();
-    if (reference.kind() != compare.kind()) {
+    if reference.kind() != compare.kind() {
         return Err(EvaluationError::type_mismatch(
             &node,
             reference.kind(),
@@ -135,11 +135,11 @@ fn lessthan(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
 }
 
 fn greaterthan(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
-    let paramsSize = params.len();
-    assert_eq!(paramsSize, 2);
+    let params_size = params.len();
+    assert_eq!(params_size, 2);
     let reference = params[0].clone();
     let compare = params[1].clone();
-    if (reference.kind() != compare.kind()) {
+    if reference.kind() != compare.kind() {
         return Err(EvaluationError::type_mismatch(
             &node,
             reference.kind(),
@@ -162,7 +162,7 @@ fn greaterthan(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     Ok(Structure::Boolean(ret))
 }
 
-fn sequence(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+fn sequence(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     // rely on the interpreter itself being sequential (single threaded)
     // simply return the last accumulated result
     let params_size = params.len();
@@ -170,7 +170,7 @@ fn sequence(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     Ok(params[params_size - 1].clone())
 }
 
-fn cons(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+fn cons(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     assert_eq!(params.len(), 2);
     Ok(Structure::Cons(Box::new((
         params[0].clone(),
@@ -206,20 +206,20 @@ fn cdr(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
 
 fn list_impl(params: Vec<Structure>, idx: usize) -> Structure {
     let size = params.len() - idx;
-    if (size == 0) {
+    if size == 0 {
         Structure::Cons(Box::new((Structure::Nil, Structure::Nil)))
-    } else if (size == 1) {
+    } else if size == 1 {
         Structure::Cons(Box::new((params[idx].clone(), Structure::Nil)))
     } else {
         Structure::Cons(Box::new((params[idx].clone(), list_impl(params, idx + 1))))
     }
 }
 
-fn list(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+fn list(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     Ok(list_impl(params, 0))
 }
 
-fn dict(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+fn dict(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     let size = params.len();
 
     if size % 2 != 0 {
@@ -239,8 +239,8 @@ fn dict(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     Ok(Structure::Dict(result))
 }
 
-fn dict_get(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
-    if (params.len() != 2) {
+fn dict_get(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+    if params.len() != 2 {
         return Err(EvaluationError {
             message: "expected 2 parameters to `dict.get`".to_string(),
         });
@@ -255,8 +255,8 @@ fn dict_get(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     }
 }
 
-fn dict_set(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
-    if (params.len() != 3) {
+fn dict_set(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+    if params.len() != 3 {
         return Err(EvaluationError {
             message: "expected 3 parameters to `dict.set`".to_string(),
         });
@@ -268,13 +268,13 @@ fn dict_set(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     Ok(Structure::Dict(dict))
 }
 
-fn string(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
-    if params.len() == 0 {
+fn string(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+    if params.is_empty() {
         return Err(EvaluationError {
             message: "not enough parameters to `string`".to_string(),
         });
     }
-    if (params.len() > 1) {
+    if params.len() > 1 {
         return Err(EvaluationError {
             message: "too many parameters to `string`".to_string(),
         });
@@ -417,7 +417,7 @@ mod tests {
     }
 
     #[test]
-    fn readLine() {
+    fn read_line() {
         // TODO: port readLine test from C++ and implement overriding stdin/stdout
     }
 }

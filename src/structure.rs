@@ -195,9 +195,9 @@ fn fmt_dict(d: &HashMap<String, Structure>) -> String {
 impl fmt::Display for Structure {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Structure::Boolean(b) => write!(f, "{}", b.to_string()),
-            Structure::Byte(b) => write!(f, "{}", b.to_string()),
-            Structure::Char(c) => write!(f, "{}", c.to_string()),
+            Structure::Boolean(b) => write!(f, "{}", b),
+            Structure::Byte(b) => write!(f, "{}", b),
+            Structure::Char(c) => write!(f, "{}", c),
             Structure::Cons(c) => write!(f, "(cons {} {})", c.0, c.1),
             Structure::Dict(d) => write!(f, "{}", fmt_dict(d)),
             Structure::FloatingPoint(v) => write!(f, "{}", v),
