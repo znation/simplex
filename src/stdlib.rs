@@ -1,4 +1,4 @@
-use std::{collections::HashMap, hash::Hash, iter::empty};
+use std::{collections::HashMap};
 
 use crate::{
     astnode::ASTNode,
@@ -6,20 +6,20 @@ use crate::{
     structure::{Function, Structure, StructureKind},
 };
 
-fn extractFloat(n: &Structure) -> f64 {
-    if (n.kind() == StructureKind::Integer) {
+fn extract_float(n: &Structure) -> f64 {
+    if n.kind() == StructureKind::Integer {
         return n.integer() as f64;
     }
     return n.floating_point();
 }
 
-fn unaryPlus(n: &Structure) -> Structure {
+fn unary_plus(n: &Structure) -> Structure {
     assert!(n.kind() == StructureKind::Integer || n.kind() == StructureKind::FloatingPoint);
     return n.clone(); // don't modify
 }
 
-fn unaryMinus(n: &Structure) -> Structure {
-    if (n.kind() == StructureKind::Integer) {
+fn unary_minus(n: &Structure) -> Structure {
+    if n.kind() == StructureKind::Integer {
         return Structure::Integer(-(n.integer()));
     } else {
         assert_eq!(n.kind(), StructureKind::FloatingPoint);
@@ -27,45 +27,45 @@ fn unaryMinus(n: &Structure) -> Structure {
     }
 }
 
-fn plus(node: ASTNode, params: Vec<Structure>) -> Result<Structure, EvaluationError> {
-    if (params.len() == 1) {
-        return Ok(unaryPlus(&params[0]));
+fn plus(_node: ASTNode, params: Vec<Structure>) -> Result<Structure, EvaluationError> {
+    if params.len() == 1 {
+        return Ok(unary_plus(&params[0]));
     }
     assert_eq!(params.len(), 2);
-    if (params[0].kind() == StructureKind::Integer && params[1].kind() == StructureKind::Integer) {
+    if params[0].kind() == StructureKind::Integer && params[1].kind() == StructureKind::Integer {
         return Ok(Structure::Integer(
             params[0].integer() + params[1].integer(),
         ));
     }
     return Ok(Structure::FloatingPoint(
-        extractFloat(&params[0]) + extractFloat(&params[1]),
+        extract_float(&params[0]) + extract_float(&params[1]),
     ));
 }
 
-fn minus(node: ASTNode, params: Vec<Structure>) -> Result<Structure, EvaluationError> {
-    if (params.len() == 1) {
-        return Ok(unaryMinus(&params[0]));
+fn minus(_node: ASTNode, params: Vec<Structure>) -> Result<Structure, EvaluationError> {
+    if params.len() == 1 {
+        return Ok(unary_minus(&params[0]));
     }
     assert_eq!(params.len(), 2);
-    if (params[0].kind() == StructureKind::Integer && params[1].kind() == StructureKind::Integer) {
+    if params[0].kind() == StructureKind::Integer && params[1].kind() == StructureKind::Integer {
         return Ok(Structure::Integer(
             params[0].integer() - params[1].integer(),
         ));
     }
     return Ok(Structure::FloatingPoint(
-        extractFloat(&params[0]) - extractFloat(&params[1]),
+        extract_float(&params[0]) - extract_float(&params[1]),
     ));
 }
 
-fn times(node: ASTNode, params: Vec<Structure>) -> Result<Structure, EvaluationError> {
+fn times(_node: ASTNode, params: Vec<Structure>) -> Result<Structure, EvaluationError> {
     assert!(params.len() >= 1);
-    let mut allInteger = true;
+    let mut all_integer = true;
     for param in &params {
-        if (param.kind() != StructureKind::Integer) {
-            allInteger = false;
+        if param.kind() != StructureKind::Integer {
+            all_integer = false;
         }
     }
-    if (allInteger) {
+    if all_integer {
         let mut ret: i64 = 1;
         for param in params {
             ret *= param.integer();
@@ -74,31 +74,31 @@ fn times(node: ASTNode, params: Vec<Structure>) -> Result<Structure, EvaluationE
     } else {
         let mut ret: f64 = 1.0;
         for param in params {
-            ret *= extractFloat(&param);
+            ret *= extract_float(&param);
         }
         return Ok(Structure::FloatingPoint(ret));
     }
 }
 
-fn divide(node: ASTNode, params: Vec<Structure>) -> Result<Structure, EvaluationError> {
+fn divide(_node: ASTNode, params: Vec<Structure>) -> Result<Structure, EvaluationError> {
     assert_eq!(params.len(), 2);
-    if (params[0].kind() == StructureKind::Integer && params[1].kind() == StructureKind::Integer) {
+    if params[0].kind() == StructureKind::Integer && params[1].kind() == StructureKind::Integer {
         return Ok(Structure::Integer(
             params[0].integer() / params[1].integer(),
         ));
     } else {
         return Ok(Structure::FloatingPoint(
-            extractFloat(&params[0]) / extractFloat(&params[1]),
+            extract_float(&params[0]) / extract_float(&params[1]),
         ));
     }
 }
 
-fn equals(node: ASTNode, params: Vec<Structure>) -> Result<Structure, EvaluationError> {
-    let paramsSize = params.len();
-    assert!(paramsSize >= 2);
+fn equals(_node: ASTNode, params: Vec<Structure>) -> Result<Structure, EvaluationError> {
+    let params_size = params.len();
+    assert!(params_size >= 2);
     let reference = &params[0];
     let mut ret = true;
-    for i in 1..paramsSize {
+    for i in 1..params_size {
         let param = &params[i];
         ret = ret && (reference == param);
     }

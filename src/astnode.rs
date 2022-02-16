@@ -9,7 +9,6 @@ enum ASTValue {
     Double(f64),
     String(String),
     Children(Vec<ASTNode>),
-    Invalid,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -385,16 +384,6 @@ impl ASTNode {
         })
     }
 
-    // produces invalid node! should only use for testing
-    pub fn new() -> ASTNode {
-        ASTNode {
-            kind: NodeKind::Invalid,
-            value: ASTValue::Invalid,
-            line: 0,
-            col: 0,
-        }
-    }
-
     pub fn kind(&self) -> NodeKind {
         self.kind
     }
@@ -425,14 +414,6 @@ impl ASTNode {
             ASTValue::String(s) => s.clone(),
             _ => panic!(),
         }
-    }
-
-    pub fn line(&self) -> i64 {
-        self.line
-    }
-
-    pub fn col(&self) -> i64 {
-        self.col
     }
 
     fn expect<S: AsRef<str>>(
@@ -496,7 +477,6 @@ pub enum NodeKind {
     FloatingPoint,
     Identifier,
     Integer,
-    Invalid,
     Literal,
     OptionalParameterList,
     ParameterList,

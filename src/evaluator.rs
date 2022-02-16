@@ -9,21 +9,20 @@ use crate::stdlib::Stdlib;
 use crate::structure::Function;
 use crate::structure::FunctionBody;
 use crate::structure::Structure;
-use crate::structure::StructureKind;
 use crate::structure::SymbolTable;
 
-fn dictOfParams(
-    parameterList: &Vec<ASTNode>,
-    parameterValues: &Vec<Structure>,
+fn dict_of_params(
+    parameter_list: &Vec<ASTNode>,
+    parameter_values: &Vec<Structure>,
 ) -> HashMap<String, Structure> {
     let mut ret = HashMap::new();
-    let nParams = parameterList.len() - 1;
-    let nValues = parameterValues.len();
-    assert_eq!(nParams, nValues);
-    for i in 0..nParams {
-        let param = &parameterList[i];
+    let n_params = parameter_list.len() - 1;
+    let n_values = parameter_values.len();
+    assert_eq!(n_params, n_values);
+    for i in 0..n_params {
+        let param = &parameter_list[i];
         assert_eq!(param.kind(), NodeKind::Identifier);
-        let value = parameterValues[i].clone();
+        let value = parameter_values[i].clone();
         ret.insert(param.string(), value);
     }
     ret
@@ -81,17 +80,17 @@ impl Evaluator {
         assert_eq!(children[0].kind(), NodeKind::Identifier);
         assert_eq!(children[0].string(), "lambda");
         assert_eq!(children[1].kind(), NodeKind::OptionalParameterList);
-        let parameterList = children[1].children()[0].children().clone();
-        let function_body = FunctionBody::Lambda(|node, outerSymbols, parameterList, params| {
-            let body = parameterList[parameterList.len() - 1].clone();
-            let mut symbols = outerSymbols.clone();
-            symbols.extend(dictOfParams(&parameterList, &params));
+        let parameter_list = children[1].children()[0].children().clone();
+        let function_body = FunctionBody::Lambda(|_node, outer_symbols, parameter_list, params| {
+            let body = parameter_list[parameter_list.len() - 1].clone();
+            let mut symbols = outer_symbols.clone();
+            symbols.extend(dict_of_params(&parameter_list, &params));
             let mut e = Evaluator { symbols };
             return e.eval_node(body);
         });
         let function = Function {
-            outerSymbols: self.symbols.clone(),
-            parameterList: parameterList,
+            outer_symbols: self.symbols.clone(),
+            parameter_list,
             function: function_body,
         };
         Ok(Structure::Function(function))
@@ -106,8 +105,8 @@ impl Evaluator {
         assert_eq!(child0.kind(), NodeKind::Identifier);
         assert_eq!(child0.string(), "let");
         assert_eq!(child1.kind(), NodeKind::OptionalParameterList);
-        let parameterList = child1.children()[0].clone();
-        let id_with_value = parameterList.children();
+        let parameter_list = child1.children()[0].clone();
+        let id_with_value = parameter_list.children();
         assert_eq!(id_with_value.len(), 2);
         let id = id_with_value[0].clone();
         assert_eq!(id.kind(), NodeKind::Identifier);
@@ -132,20 +131,20 @@ impl Evaluator {
             Ok(c) => c.boolean(),
             Err(e) => return Err(e),
         };
-        if (condition) {
+        if condition {
             return self.eval_node(parameters[1].clone());
         } else {
             return self.eval_node(parameters[2].clone());
         }
     }
-    pub fn eval_cond_expression(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
+    pub fn eval_cond_expression(&self, _node: ASTNode) -> Result<Structure, EvaluationError> {
         todo!()
     }
 
     pub fn eval_parameters(&mut self, node: ASTNode) -> Result<Vec<Structure>, EvaluationError> {
-        if (node.kind() == NodeKind::OptionalParameterList) {
+        if node.kind() == NodeKind::OptionalParameterList {
             let children = node.children();
-            if (children.len() == 0) {
+            if children.len() == 0 {
                 return Ok(Vec::new());
             }
             assert_eq!(children.len(), 1);
@@ -169,14 +168,14 @@ impl Evaluator {
         let children = node.children();
         assert_eq!(children.len(), 2);
         let first_child = children[0].clone();
-        if (first_child.kind() == NodeKind::Identifier) {
-            if (first_child.string() == "lambda") {
+        if first_child.kind() == NodeKind::Identifier {
+            if first_child.string() == "lambda" {
                 return self.eval_lambda_expression(node);
-            } else if (first_child.string() == "let") {
+            } else if first_child.string() == "let" {
                 return self.eval_let_expression(node);
-            } else if (first_child.string() == "if") {
+            } else if first_child.string() == "if" {
                 return self.eval_if_expression(node);
-            } else if (first_child.string() == "cond") {
+            } else if first_child.string() == "cond" {
                 return self.eval_cond_expression(node);
             }
         }
@@ -198,9 +197,9 @@ impl Evaluator {
 
     pub fn eval_identifier(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
         let str = node.string();
-        if (str == "true") {
+        if str == "true" {
             return Ok(Structure::Boolean(true));
-        } else if (str == "false") {
+        } else if str == "false" {
             return Ok(Structure::Boolean(false));
         }
 

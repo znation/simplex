@@ -33,8 +33,8 @@ pub enum FunctionBody {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Function {
-    pub outerSymbols: SymbolTable,
-    pub parameterList: Vec<ASTNode>,
+    pub outer_symbols: SymbolTable,
+    pub parameter_list: Vec<ASTNode>,
     pub function: FunctionBody,
 }
 
@@ -43,8 +43,8 @@ impl Function {
         function: fn(node: ASTNode, params: Vec<Structure>) -> Result<Structure, EvaluationError>,
     ) -> Structure {
         Structure::Function(Function {
-            outerSymbols: HashMap::new(),
-            parameterList: Vec::new(),
+            outer_symbols: HashMap::new(),
+            parameter_list: Vec::new(),
             function: FunctionBody::Native(function),
         })
     }
@@ -57,8 +57,8 @@ impl Function {
         match self.function {
             FunctionBody::Lambda(lambda) => lambda(
                 node,
-                self.outerSymbols.clone(),
-                self.parameterList.clone(),
+                self.outer_symbols.clone(),
+                self.parameter_list.clone(),
                 params,
             ),
             FunctionBody::Native(native) => native(node, params),
@@ -95,12 +95,12 @@ impl Structure {
     pub fn from_string(s: String) -> Structure {
         // create cons from string
         let len = s.len();
-        if (len == 0) {
+        if len == 0 {
             Structure::Cons(Box::new((Structure::Nil, Structure::Nil)))
         } else {
             let mut chars = s.chars();
             let car = Structure::Char(chars.nth(0).unwrap());
-            let cdr = if (len == 1) {
+            let cdr = if len == 1 {
                 Structure::Nil
             } else {
                 Structure::from_string(s[1..s.len()].to_string())
