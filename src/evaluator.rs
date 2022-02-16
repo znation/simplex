@@ -115,8 +115,25 @@ impl Evaluator {
         self.symbols.insert(id.string(), new_symbol);
         return Ok(Structure::Boolean(true));
     }
-    pub fn eval_if_expression(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
-        todo!()
+    pub fn eval_if_expression(&mut self, node: ASTNode) -> Result<Structure, EvaluationError> {
+        assert_eq!(node.kind(), NodeKind::Expression);
+        let children = node.children();
+        assert_eq!(children.len(), 2);
+        assert_eq!(children[0].kind(), NodeKind::Identifier);
+        assert_eq!(children[0].string(), "if");
+        assert_eq!(children[1].kind(), NodeKind::OptionalParameterList);
+        let parameters = children[1].children()[0].children();
+        assert_eq!(parameters.len(), 3);
+        let result = self.eval_node(parameters[0].clone());
+        let condition = match result {
+            Ok(c) => c.boolean(),
+            Err(e) => return Err(e),
+        };
+        if (condition) {
+            return self.eval_node(parameters[1].clone());
+        } else {
+            return self.eval_node(parameters[2].clone());
+        }
     }
     pub fn eval_cond_expression(&self, node: ASTNode) -> Result<Structure, EvaluationError> {
         todo!()
@@ -232,12 +249,9 @@ mod tests {
             let result = $e.eval(stringify!(($op $p)).to_string());
             dbg!(&result);
             assert!(result.is_ok());
-            let type_conversion_result = result.unwrap().unbox();
-            dbg!(&type_conversion_result);
-            assert!(type_conversion_result.is_ok());
 
             // comparing all math in f64 should be sufficient
-            let unwrapped: f64 = type_conversion_result.unwrap();
+            let unwrapped: f64 = result.unwrap().floating_point();
             dbg!(&unwrapped);
             assert_eq!(unwrapped, $expected as f64);
 
@@ -246,10 +260,7 @@ mod tests {
             let result2 = $e.eval(stringify!((= ($op $p) $expected)).to_string());
             dbg!(&result2);
             assert!(result2.is_ok());
-            let type_conversion_result2 = result2.unwrap().unbox();
-            dbg!(&type_conversion_result2);
-            assert!(type_conversion_result2.is_ok());
-            let unwrapped2: bool = type_conversion_result2.unwrap();
+            let unwrapped2: bool = result2.unwrap().boolean();
             dbg!(&unwrapped2);
             assert!(unwrapped2);
         };
@@ -259,21 +270,21 @@ mod tests {
         ($e: ident, $op:tt, $p1: literal, $p2: literal, $expected: literal) => {
             // run the given operator and compare the result in Rust
             let result = $e.eval(stringify!(($op $p1 $p2)).to_string());
+            dbg!(&result);
             assert!(result.is_ok());
-            let type_conversion_result = result.unwrap().unbox();
-            assert!(type_conversion_result.is_ok());
 
             // comparing all math in f64 should be sufficient
-            let unwrapped: f64 = type_conversion_result.unwrap();
+            let unwrapped: f64 = result.unwrap().floating_point();
+            dbg!(&unwrapped);
             assert_eq!(unwrapped, $expected as f64);
 
             // now, run the same operator and compare within the evaluator
             // (the = expression should return true)
-            let result2 = $e.eval(stringify!((= ($op $p1 p2) $expected)).to_string());
+            let result2 = $e.eval(stringify!((= ($op $p1 $p2) $expected)).to_string());
+            dbg!(&result2);
             assert!(result2.is_ok());
-            let type_conversion_result2 = result2.unwrap().unbox();
-            assert!(type_conversion_result2.is_ok());
-            let unwrapped2: bool = type_conversion_result2.unwrap();
+            let unwrapped2: bool = result2.unwrap().boolean();
+            dbg!(&unwrapped2);
             assert!(unwrapped2);
         };
     }

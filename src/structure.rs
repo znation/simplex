@@ -70,13 +70,6 @@ pub struct TypeMismatchError {
 impl TypeMismatchError {}
 
 impl Structure {
-    pub fn unbox<T>(&self) -> Result<T, TypeMismatchError> {
-        Err(TypeMismatchError {
-            expected: StructureKind::Invalid,
-            found: StructureKind::Invalid,
-        })
-    }
-
     pub fn new() -> Structure {
         Structure::Invalid
     }
@@ -123,6 +116,14 @@ impl Structure {
     pub fn floating_point(&self) -> f64 {
         match self {
             Structure::FloatingPoint(f) => *f,
+            Structure::Integer(i) => *i as f64,
+            _ => panic!()
+        }
+    }
+
+    pub fn boolean(&self) -> bool {
+        match self {
+            Structure::Boolean(b) => *b,
             _ => panic!()
         }
     }
