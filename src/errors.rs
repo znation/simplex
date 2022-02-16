@@ -1,4 +1,4 @@
-use crate::astnode::NodeKind;
+use crate::{astnode::{NodeKind, ASTNode}, structure::StructureKind};
 
 #[derive(Debug, PartialEq)]
 pub struct ParseError {
@@ -34,5 +34,15 @@ pub struct EvaluationError {
 impl EvaluationError {
     pub fn from_parse_error(e: ParseError) -> EvaluationError {
         EvaluationError { message: e.message }
+    }
+
+    pub fn type_mismatch(node: &ASTNode, expected: StructureKind, found: StructureKind) -> EvaluationError {
+        EvaluationError { message: format!(
+            "{}|{}: type mismatch error: expected {:?}, found {:?}",
+            node.line(),
+            node.col(),
+            expected,
+            found
+        ) }
     }
 }

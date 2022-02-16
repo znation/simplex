@@ -77,13 +77,6 @@ pub enum Structure {
     Nil,
 }
 
-#[derive(Debug, PartialEq)]
-pub struct TypeMismatchError {
-    pub expected: StructureKind,
-    pub found: StructureKind,
-}
-impl TypeMismatchError {}
-
 impl Structure {
     pub fn new() -> Structure {
         Structure::Invalid
@@ -174,6 +167,13 @@ impl Structure {
             } else {
                 car.char().to_string() + &cdr.string()
             }
+        }
+    }
+
+    pub fn dict(&self) -> HashMap<String, Structure> {
+        match self {
+            Structure::Dict(d) => d.clone(),
+            _ => panic!()
         }
     }
 }

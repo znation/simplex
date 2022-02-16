@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     astnode::ASTNode,
-    structure::{EvaluationResult, Function, Structure, StructureKind},
+    structure::{EvaluationResult, Function, Structure, StructureKind}, errors::EvaluationError,
 };
 
 fn extract_float(n: &Structure) -> f64 {
@@ -105,6 +105,143 @@ fn equals(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     Ok(Structure::Boolean(ret))
 }
 
+fn lessthan(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+  let paramsSize = params.len();
+  assert_eq!(paramsSize, 2);
+  let reference = params[0].clone();
+  let compare = params[1].clone();
+  if (reference.kind() != compare.kind()) {
+      return Err(EvaluationError::type_mismatch(&node, reference.kind(), compare.kind()));
+  }
+  let ret = match reference.kind() {
+    StructureKind::Byte => reference.byte() < compare.byte(),
+    StructureKind::Char => reference.char() < compare.char(),
+    StructureKind::FloatingPoint => reference.floating_point() < compare.floating_point(),
+    StructureKind::Integer => reference.integer() < compare.integer(),
+    _ => return Err(EvaluationError::type_mismatch(&node, StructureKind::FloatingPoint, compare.kind()))
+  };
+  Ok(Structure::Boolean(ret))
+}
+
+fn greaterthan(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+  let paramsSize = params.len();
+  assert_eq!(paramsSize, 2);
+  let reference = params[0].clone();
+  let compare = params[1].clone();
+  if (reference.kind() != compare.kind()) {
+      return Err(EvaluationError::type_mismatch(&node, reference.kind(), compare.kind()));
+  }
+  let ret = match reference.kind() {
+    StructureKind::Byte => reference.byte() > compare.byte(),
+    StructureKind::Char => reference.char() > compare.char(),
+    StructureKind::FloatingPoint => reference.floating_point() > compare.floating_point(),
+    StructureKind::Integer => reference.integer() > compare.integer(),
+    _ => return Err(EvaluationError::type_mismatch(&node, StructureKind::FloatingPoint, compare.kind()))
+  };
+  Ok(Structure::Boolean(ret))
+}
+
+fn sequence(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+  // rely on the interpreter itself being sequential (single threaded)
+  // simply return the last accumulated result
+  let params_size = params.len();
+  assert_ne!(params_size, 0);
+  Ok(params[params_size-1].clone())
+}
+
+fn cons(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+  assert_eq!(params.len(), 2);
+  Ok(Structure::Cons(Box::new((params[0].clone(), params[1].clone()))))
+}
+
+fn car(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+  assert_eq!(params.len(), 1);
+  let cons = params[0].clone();
+  match cons {
+    Structure::Cons(c) => Ok(c.0),
+    _ => Err(EvaluationError::type_mismatch(&node, StructureKind::Cons, cons.kind()))
+    } 
+}
+
+fn cdr(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+  assert_eq!(params.len(), 1);
+  let cons = params[0].clone();
+  match cons {
+    Structure::Cons(c) => Ok(c.1),
+    _ => Err(EvaluationError::type_mismatch(&node, StructureKind::Cons, cons.kind()))
+    } 
+}
+
+fn list_impl(params: Vec<Structure>, idx: usize) -> Structure {
+  let size = params.len() - idx;
+  if (size == 0) {
+      Structure::Cons(Box::new((Structure::Nil, Structure::Nil)))
+  } else if (size == 1) {
+      Structure::Cons(Box::new((params[idx].clone(), Structure::Nil)))
+  } else {
+      Structure::Cons(Box::new((params[idx].clone(), list_impl(params, idx+1))))
+  }
+}
+
+fn list(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+  Ok(list_impl(params, 0))
+}
+
+fn dict(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+  let size = params.len();
+
+  if size % 2 != 0 {
+      return Err(EvaluationError { message: "expected an even number of parameters to `dict`".to_string() } );
+  }
+
+  let mut result = HashMap::new();
+  let mut i = 0;
+  while i < size {
+    let key = params[i].string();
+    let value = params[i+1].clone();
+    result.insert(
+        key, value
+    );
+    i += 2;
+  }
+  Ok(Structure::Dict(result))
+}
+
+fn dict_get(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+  if (params.len() != 2) {
+      return Err(EvaluationError { message: "expected 2 parameters to `dict.get`".to_string() });
+  }
+  let key = params[0].string();
+  let dict = params[1].dict();
+  match dict.get(&key) {
+    Some(s) => Ok(s.clone()),
+    None => Err(EvaluationError { message: format!("could not find key {} in dict", key) }),
+}
+}
+
+fn dict_set(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+  if (params.len() != 3) {
+      return Err(EvaluationError { message: "expected 3 parameters to `dict.set`".to_string() });
+  }
+  let key = params[0].string();
+  let value = params[1].clone();
+  let mut dict = params[2].dict();
+  dict.insert(key, value);
+  Ok(Structure::Dict(dict))
+}
+
+fn string(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+  if params.len() == 0 {
+    return Err(EvaluationError { message: "not enough parameters to `string`".to_string() });
+  }
+  if (params.len() > 1) {
+    return Err(EvaluationError { message: "too many parameters to `string`".to_string() });
+  }
+  let param = params[0].clone();
+  let result = param.string();
+  Ok(Structure::from_string(result))
+}
+
 pub struct Stdlib {}
 impl Stdlib {
     pub fn symbols() -> HashMap<String, Structure> {
@@ -117,35 +254,33 @@ impl Stdlib {
         symbols.insert("*".to_string(), Function::synthetic(times));
         symbols.insert("/".to_string(), Function::synthetic(divide));
         symbols.insert("=".to_string(), Function::synthetic(equals));
-        /*
-        symbols["<"] = Structure(static_cast<Structure::Function>(lessthan));
-        symbols[">"] = Structure(static_cast<Structure::Function>(greaterthan));
+        symbols.insert("<".to_string(), Function::synthetic(lessthan));
+        symbols.insert(">".to_string(), Function::synthetic(greaterthan));
 
         // control flow
-        symbols["sequence"] = Structure(static_cast<Structure::Function>(sequence));
+        symbols.insert("sequence".to_string(), Function::synthetic(sequence));
 
         // structural operators
-        symbols["cons"] = Structure(static_cast<Structure::Function>(cons));
-        symbols["car"] = Structure(static_cast<Structure::Function>(car));
-        symbols["cdr"] = Structure(static_cast<Structure::Function>(cdr));
-        symbols["list"] = Structure(static_cast<Structure::Function>(list));
+        symbols.insert("cons".to_string(), Function::synthetic(cons));
+        symbols.insert("car".to_string(), Function::synthetic(car));
+        symbols.insert("cdr".to_string(), Function::synthetic(cdr));
+        symbols.insert("list".to_string(), Function::synthetic(list));
 
-        symbols["dict"] = Structure(static_cast<Structure::Function>(dict));
-        symbols["dict.get"] = Structure(static_cast<Structure::Function>(dict_get));
-        symbols["dict.set"] = Structure(static_cast<Structure::Function>(dict_set));
+        symbols.insert("dict".to_string(), Function::synthetic(dict));
+        symbols.insert("dict.get".to_string(), Function::synthetic(dict_get));
+        symbols.insert("dict.set".to_string(), Function::synthetic(dict_set));
 
         // values
-        const static std::string endl("\n");
-        symbols["endl"] = Structure(endl);
-        symbols["nil"] = Structure::Nil();
+        let endl = "\n".to_string();
+        symbols.insert("endl".to_string(), Structure::from_string(endl));
+        symbols.insert("nil".to_string(), Structure::Nil);
 
         // conversion
-        symbols["string"] = Structure(static_cast<Structure::Function>(string));
+        symbols.insert("string".to_string(), Function::synthetic(string));
 
         // i/o
-        symbols["print"] = Structure(print(symbols));
-        symbols["read"] = Structure(read(symbols));
-        */
+        //symbols.insert("print".to_string(), Structure(print(symbols));
+        //symbols.insert("read".to_string(), Structure(read(symbols));
         symbols
     }
 }

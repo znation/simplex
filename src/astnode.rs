@@ -424,6 +424,14 @@ impl ASTNode {
         }
     }
 
+    pub fn line(&self) -> i64 {
+        self.line
+    }
+
+    pub fn col(&self) -> i64 {
+        self.col
+    }
+
     fn expect<S: AsRef<str>>(
         kind: NodeKind,
         input: &mut ASTInput,
