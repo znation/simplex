@@ -149,3 +149,84 @@ impl Stdlib {
         symbols
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::evaluator::Evaluator;
+
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+
+    macro_rules! CHECK_COMPARISON_2 {
+        ($e: ident, $op:tt, $p1: literal, $p2: literal, $expected: literal) => {
+            // run the given operator and compare the result in Rust
+            let result = $e.eval(stringify!(($op $p1 $p2)).to_string());
+            dbg!(&result);
+            assert!(result.is_ok());
+
+            // comparing all math in f64 should be sufficient
+            let unwrapped: bool = result.unwrap().boolean();
+            dbg!(&unwrapped);
+            assert_eq!(unwrapped, $expected);
+
+            // now, run the same operator and compare within the evaluator
+            // (the = expression should return true)
+            let result2 = $e.eval(stringify!((= ($op $p1 $p2) $expected)).to_string());
+            dbg!(&result2);
+            assert!(result2.is_ok());
+            let unwrapped2: bool = result2.unwrap().boolean();
+            dbg!(&unwrapped2);
+            assert!(unwrapped2);
+        };
+    }
+
+    #[test]
+    fn append() {
+    let mut e = Evaluator::new();
+    assert_eq!(e.eval("(append (list) (list))"), e.eval("(list)"));
+    assert_eq!(e.eval("(append (list) (list 1 2 3))"), e.eval("(list 1 2 3)"));
+    assert_eq!(e.eval("(append (list 1) (list 2 3))"), e.eval("(list 1 2 3)"));
+    assert_eq!(e.eval("(append (list 1 2) (list 3 4))"), e.eval("(list 1 2 3 4)"));
+    assert_eq!(e.eval("(append (list 1 2) (list 3))"), e.eval("(list 1 2 3)"));
+    assert_eq!(e.eval("(append (list 1 2 3) (list))"), e.eval("(list 1 2 3)"));
+    }
+
+    #[test]
+    fn operators_stdlib() {
+    let mut e = Evaluator::new();
+    CHECK_COMPARISON_2!(e, <=, 2, 3, true);
+    CHECK_COMPARISON_2!(e, <=, 3, 3, true);
+    CHECK_COMPARISON_2!(e, <=, 4, 3, false);
+    CHECK_COMPARISON_2!(e, >=, 2, 3, false);
+    CHECK_COMPARISON_2!(e, >=, 3, 3, true);
+    CHECK_COMPARISON_2!(e, >=, 4, 3, true);
+    }
+
+    #[test]
+    fn len() {
+    let mut e = Evaluator::new();
+    assert_eq!(e.eval("(len (list))"), Ok(Structure::Integer(0)));
+    assert_eq!(e.eval("(len (list 1))"), Ok(Structure::Integer(1)));
+    assert_eq!(e.eval("(len (list 1 2))"), Ok(Structure::Integer(2)));
+    assert_eq!(e.eval("(len (list 1 2 3))"), Ok(Structure::Integer(3)));
+    }
+
+    #[test]
+    fn reverse() {
+    let mut e = Evaluator::new();
+    assert_eq!(e.eval("(reverse (list))"), e.eval("(list)"));
+    assert_eq!(e.eval("(reverse (list 1))"), e.eval("(list 1)"));
+    assert_eq!(e.eval("(reverse (list 1 2))"), e.eval("(list 2 1)"));
+    assert_eq!(e.eval("(reverse (list 1 2 3))"), e.eval("(list 3 2 1)"));
+    assert_eq!(e.eval("(reverse '')"), e.eval("''"));
+    assert_eq!(e.eval("(reverse 'a')"), e.eval("'a'"));
+    assert_eq!(e.eval("(reverse 'ab')"), e.eval("'ba'"));
+    assert_eq!(e.eval("(reverse 'hello')"), e.eval("'olleh'"));
+    }
+
+    #[test]
+    fn readLine() {
+        // TODO: port readLine test from C++ and implement overriding stdin/stdout
+    }
+
+}

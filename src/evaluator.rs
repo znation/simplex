@@ -66,7 +66,7 @@ impl Evaluator {
         }
     }
 
-    pub fn eval(&mut self, str: String) -> EvaluationResult {
+    pub fn eval<S: AsRef<str>>(&mut self, str: S) -> EvaluationResult {
         let node = match Parser::parse(str) {
             Ok(n) => n,
             Err(e) => return Err(EvaluationError::from_parse_error(e)),
@@ -138,8 +138,30 @@ impl Evaluator {
             self.eval_node(parameters[2].clone())
         }
     }
-    pub fn eval_cond_expression(&self, _node: ASTNode) -> EvaluationResult {
-        todo!()
+    pub fn eval_cond_expression(&mut self, node: ASTNode) -> EvaluationResult {
+        assert_eq!(node.kind(), NodeKind::Expression);
+        let children = node.children();
+        assert_eq!(children.len(), 2);
+        assert_eq!(children[0].kind(), NodeKind::Identifier);
+        assert_eq!(children[0].string(), "cond");
+        assert_eq!(children[1].kind(), NodeKind::OptionalParameterList);
+        let parameters = children[1].children()[0].children();
+        if (parameters.len() % 2 != 0) {
+            return Err(EvaluationError { message: "cond must take an even number of parameters (pairs of condition and expression)".to_string() });
+        }
+        let mut i = 0;
+        while i < parameters.len() {
+            let result = self.eval_node(parameters[i].clone());
+            let condition = match result {
+                Ok(s) => s.boolean(),
+                Err(e) => return Err(e)
+            };
+            if condition {
+                return self.eval_node(parameters[i+1].clone());
+            }
+            i += 2;
+        }
+        Err(EvaluationError { message: "`cond` expression did not return a value (no condition evaluated to true)".to_string() })
     }
 
     pub fn eval_parameters(&mut self, node: ASTNode) -> Result<Vec<Structure>, EvaluationError> {
