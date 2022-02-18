@@ -1,9 +1,18 @@
-use std::{collections::HashMap, fmt};
+use std::{collections::HashMap, fmt, rc::Rc, cell::RefCell, hash::Hash};
 
 use crate::{astnode::ASTNode, errors::EvaluationError};
 
-pub type SymbolTable = HashMap<String, Structure>;
+pub type SymbolTable = Rc<RefCell<HashMap<String, Structure>>>;
 pub type EvaluationResult = Result<Structure, EvaluationError>;
+
+pub trait Empty {
+    fn empty() -> Self;
+}
+impl Empty for SymbolTable {
+    fn empty() -> Self {
+        Rc::new(RefCell::new(HashMap::new()))
+    }
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum StructureKind {
@@ -44,7 +53,7 @@ impl Function {
         function: fn(node: ASTNode, params: Vec<Structure>) -> EvaluationResult,
     ) -> Structure {
         Structure::Function(Function {
-            outer_symbols: HashMap::new(),
+            outer_symbols: SymbolTable::empty(),
             parameter_list: Vec::new(),
             function: FunctionBody::Native(function),
         })

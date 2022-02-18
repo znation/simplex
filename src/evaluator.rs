@@ -1,3 +1,4 @@
+use crate::structure::Empty;
 use std::collections::HashMap;
 
 use crate::astnode::ASTNode;
@@ -35,14 +36,14 @@ pub struct Evaluator {
 
 impl Evaluator {
     pub fn add_symbols(&mut self, new_symbols: SymbolTable) {
-        for (k, v) in new_symbols {
-            self.symbols.insert(k, v);
+        for (k, v) in &*new_symbols.borrow() {
+            self.symbols.borrow_mut().insert(k.clone(), v.clone());
         }
     }
 
     pub fn new() -> Evaluator {
         let mut ret = Evaluator {
-            symbols: SymbolTable::new(),
+            symbols: SymbolTable::empty(),
         };
 
         // Rust-native parts of the standard library
@@ -84,8 +85,8 @@ impl Evaluator {
         let parameter_list = children[1].children()[0].children().clone();
         let function_body = FunctionBody::Lambda(|_node, outer_symbols, parameter_list, params| {
             let body = parameter_list[parameter_list.len() - 1].clone();
-            let mut symbols = outer_symbols;
-            symbols.extend(dict_of_params(&parameter_list, &params));
+            let symbols = outer_symbols;
+            symbols.borrow_mut().extend(dict_of_params(&parameter_list, &params));
             let mut e = Evaluator { symbols };
             e.eval_node(body)
         });
@@ -115,7 +116,7 @@ impl Evaluator {
             Ok(result) => result,
             Err(e) => return Err(e),
         };
-        self.symbols.insert(id.string(), new_symbol);
+        self.symbols.borrow_mut().insert(id.string(), new_symbol);
         Ok(Structure::Boolean(true))
     }
     pub fn eval_if_expression(&mut self, node: ASTNode) -> EvaluationResult {
@@ -229,7 +230,8 @@ impl Evaluator {
             return Ok(Structure::Boolean(false));
         }
 
-        let result = self.symbols.get(&str);
+        let symbols = self.symbols.borrow();
+        let result = symbols.get(&str);
         match result {
             Some(structure) => Ok(structure.clone()),
             None => {

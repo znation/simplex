@@ -1,9 +1,9 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc, cell::RefCell};
 
 use crate::{
     astnode::ASTNode,
     errors::EvaluationError,
-    structure::{EvaluationResult, Function, Structure, StructureKind},
+    structure::{EvaluationResult, Function, Structure, StructureKind, SymbolTable},
 };
 
 fn extract_float(n: &Structure) -> f64 {
@@ -286,7 +286,7 @@ fn string(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
 
 pub struct Stdlib {}
 impl Stdlib {
-    pub fn symbols() -> HashMap<String, Structure> {
+    pub fn symbols() -> SymbolTable {
         // TODO: populate built-in symbols with Rust implementations
         let mut symbols = HashMap::new();
 
@@ -323,7 +323,7 @@ impl Stdlib {
         // i/o
         //symbols.insert("print".to_string(), Structure(print(symbols));
         //symbols.insert("read".to_string(), Structure(read(symbols));
-        symbols
+        Rc::new(RefCell::new(symbols))
     }
 }
 
