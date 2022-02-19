@@ -36,7 +36,7 @@ fn main() -> Result<(), EvaluationError> {
         return Ok(());
     }
 
-    if stdout_isatty() {
+    if stdin_isatty() {
         // Run a REPL
         let mut eof = false;
         let mut evaluator = Evaluator::new();
@@ -83,6 +83,6 @@ fn main() -> Result<(), EvaluationError> {
     }
 }
 
-fn stdout_isatty() -> bool {
-    unsafe { libc::isatty(libc::STDOUT_FILENO) != 0 }
+fn stdin_isatty() -> bool {
+    unsafe { libc::isatty(libc::STDIN_FILENO) != 0 }
 }
