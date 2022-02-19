@@ -391,21 +391,17 @@ mod tests {
         ($e: ident, $op:tt, $p1: literal, $p2: literal, $expected: literal) => {
             // run the given operator and compare the result in Rust
             let result = $e.eval(stringify!(($op $p1 $p2)).to_string());
-            dbg!(&result);
             assert!(result.is_ok());
 
             // comparing all math in f64 should be sufficient
             let unwrapped: bool = result.unwrap().boolean();
-            dbg!(&unwrapped);
             assert_eq!(unwrapped, $expected);
 
             // now, run the same operator and compare within the evaluator
             // (the = expression should return true)
             let result2 = $e.eval(stringify!((= ($op $p1 $p2) $expected)).to_string());
-            dbg!(&result2);
             assert!(result2.is_ok());
             let unwrapped2: bool = result2.unwrap().boolean();
-            dbg!(&unwrapped2);
             assert!(unwrapped2);
         };
     }

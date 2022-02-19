@@ -222,7 +222,10 @@ impl fmt::Display for Structure {
             },
             Structure::Dict(d) => write!(f, "{}", fmt_dict(d)),
             Structure::FloatingPoint(v) => write!(f, "{}", v),
-            Structure::Function(_) => todo!(),
+            Structure::Function(function) => match function.function {
+                FunctionBody::Lambda(l) => write!(f, "<lambda: {:?}>", l),
+                FunctionBody::Native(n) => write!(f, "<native: {:?}>", n),
+            },
             Structure::Integer(i) => write!(f, "{}", i),
             Structure::Invalid => panic!(),
             Structure::Nil => write!(f, "()"),

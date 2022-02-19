@@ -235,10 +235,6 @@ impl Evaluator {
         match result {
             Some(structure) => Ok(structure.clone()),
             None => {
-                dbg!(&self.symbols);
-                dbg!(node);
-                dbg!(result);
-                dbg!(&str);
                 Err(EvaluationError {
                     message: format!("undeclared identifier: {}", str),
                 })
