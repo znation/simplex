@@ -160,7 +160,9 @@ impl Structure {
     }
 
     /// Turns a Simplex list of Chars into a Rust String
-    pub fn string(&self) -> Result<String, EvaluationError> {
+    pub fn string(&self, node: Option<&ASTNode>) -> Result<String, EvaluationError> {
+        let invalid_node = ASTNode::invalid();
+        let node = node.unwrap_or(&invalid_node);
         let cons = match self {
             Structure::Cons(b) => &*b,
             _ => panic!(),
@@ -171,14 +173,18 @@ impl Structure {
             assert_eq!(cdr.kind(), StructureKind::Nil);
             "".to_string()
         } else {
-            assert_eq!(car.kind(), StructureKind::Char);
-            if cdr.kind() == StructureKind::Nil {
-                car.char().to_string()
-            } else {
-                match cdr.string() {
-                    Ok(s) => car.char().to_string() + &s,
-                    Err(e) => return Err(e)
+            if car.kind() == StructureKind::Char {
+                assert_eq!(car.kind(), StructureKind::Char);
+                if cdr.kind() == StructureKind::Nil {
+                    car.char().to_string()
+                } else {
+                    match cdr.string(Some(node)) {
+                        Ok(s) => car.char().to_string() + &s,
+                        Err(e) => return Err(e)
+                    }
                 }
+            } else {
+                return Err(EvaluationError::type_mismatch(&node, StructureKind::Char, car.kind()));
             }
         };
         Ok(ret)
@@ -215,7 +221,7 @@ impl fmt::Display for Structure {
             Structure::Cons(c) => {
                 // see if we can interpret it as a string;
                 // otherwise, write it as raw cons cells
-                match self.string() {
+                match self.string(None) {
                     Ok(s) => write!(f, "{}", s),
                     Err(_) => write!(f, "(cons {} {})", c.0, c.1)
                 }
@@ -278,7 +284,7 @@ mod tests {
         for string in strings {
             let s = Structure::from_string(string.clone());
             assert_eq!(s.kind(), StructureKind::Cons);
-            match s.string() {
+            match s.string(None) {
                 Ok(found) => assert_eq!(found, string),
                 Err(_) => assert!(false)
             }

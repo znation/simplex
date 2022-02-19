@@ -9,6 +9,7 @@ enum ASTValue {
     Double(f64),
     String(String),
     Children(Vec<ASTNode>),
+    Invalid,
 }
 
 #[derive(Clone, Debug)]
@@ -28,6 +29,15 @@ impl PartialEq for ASTNode {
 }
 
 impl ASTNode {
+    pub fn invalid() -> ASTNode {
+        ASTNode {
+            kind: NodeKind::Invalid,
+            value: ASTValue::Invalid,
+            line: 0,
+            col: 0,
+        }
+    }
+
     pub fn parse_program(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
         let kind = NodeKind::Program;
         let line = input.line();
@@ -498,6 +508,7 @@ pub enum NodeKind {
     Program,
     String,
     Whitespace,
+    Invalid,
 }
 
 fn is_whitespace(c: char) -> bool {

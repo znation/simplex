@@ -181,6 +181,7 @@ fn cons(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
 fn car(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     assert_eq!(params.len(), 1);
     let cons = params[0].clone();
+    dbg!(&cons);
     match cons {
         Structure::Cons(c) => Ok(c.0),
         _ => Err(EvaluationError::type_mismatch(
@@ -219,7 +220,7 @@ fn list(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     Ok(list_impl(params, 0))
 }
 
-fn dict(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+fn dict(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     let size = params.len();
 
     if size % 2 != 0 {
@@ -231,7 +232,7 @@ fn dict(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     let mut result = HashMap::new();
     let mut i = 0;
     while i < size {
-        let key = match params[i].string() {
+        let key = match params[i].string(Some(&node)) {
             Ok(s) => s,
             Err(e) => return Err(e)
         };
@@ -242,13 +243,13 @@ fn dict(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     Ok(Structure::Dict(result))
 }
 
-fn dict_get(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+fn dict_get(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     if params.len() != 2 {
         return Err(EvaluationError {
             message: "expected 2 parameters to `dict.get`".to_string(),
         });
     }
-    let key = match params[0].string() {
+    let key = match params[0].string(Some(&node)) {
         Ok(s) => s,
         Err(e) => return Err(e)
     };
@@ -261,13 +262,13 @@ fn dict_get(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     }
 }
 
-fn dict_set(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+fn dict_set(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     if params.len() != 3 {
         return Err(EvaluationError {
             message: "expected 3 parameters to `dict.set`".to_string(),
         });
     }
-    let key = match params[0].string() {
+    let key = match params[0].string(Some(&node)) {
         Ok(s) => s,
         Err(e) => return Err(e)
     };
@@ -277,7 +278,7 @@ fn dict_set(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     Ok(Structure::Dict(dict))
 }
 
-fn string(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+fn string(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     if params.is_empty() {
         return Err(EvaluationError {
             message: "not enough parameters to `string`".to_string(),
@@ -289,7 +290,7 @@ fn string(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
         });
     }
     let param = params[0].clone();
-    match param.string() {
+    match param.string(Some(&node)) {
         Ok(s) => Ok(Structure::from_string(s)),
         Err(e) => Err(e)
     }
