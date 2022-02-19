@@ -231,7 +231,10 @@ fn dict(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     let mut result = HashMap::new();
     let mut i = 0;
     while i < size {
-        let key = params[i].string();
+        let key = match params[i].string() {
+            Ok(s) => s,
+            Err(e) => return Err(e)
+        };
         let value = params[i + 1].clone();
         result.insert(key, value);
         i += 2;
@@ -245,7 +248,10 @@ fn dict_get(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
             message: "expected 2 parameters to `dict.get`".to_string(),
         });
     }
-    let key = params[0].string();
+    let key = match params[0].string() {
+        Ok(s) => s,
+        Err(e) => return Err(e)
+    };
     let dict = params[1].dict();
     match dict.get(&key) {
         Some(s) => Ok(s.clone()),
@@ -261,7 +267,10 @@ fn dict_set(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
             message: "expected 3 parameters to `dict.set`".to_string(),
         });
     }
-    let key = params[0].string();
+    let key = match params[0].string() {
+        Ok(s) => s,
+        Err(e) => return Err(e)
+    };
     let value = params[1].clone();
     let mut dict = params[2].dict();
     dict.insert(key, value);
@@ -280,13 +289,15 @@ fn string(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
         });
     }
     let param = params[0].clone();
-    let result = param.string();
-    Ok(Structure::from_string(result))
+    match param.string() {
+        Ok(s) => Ok(Structure::from_string(s)),
+        Err(e) => Err(e)
+    }
 }
 
 fn print(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     for param in params {
-        println!("{}", param.string());
+        println!("{}", param);
     }
     Ok(Structure::Nil)
 }
@@ -294,7 +305,7 @@ fn print(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
 const MAX_READ_COUNT: usize = 1073741824;
 
 fn read_bytes(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
-    let maxCount = if params.len() == 0 { MAX_READ_COUNT } else {
+    let max_count = if params.len() == 0 { MAX_READ_COUNT } else {
         if params.len() == 1 {
             params[1].integer() as usize
         } else {
@@ -302,7 +313,7 @@ fn read_bytes(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
         }
     };
     let mut bytes: Vec<Structure> = Vec::new();
-    for byte in stdin().bytes().take(maxCount) {
+    for byte in stdin().bytes().take(max_count) {
         match byte {
             Ok(b) => bytes.push(Structure::Byte(b)),
             Err(e) => return Err(EvaluationError { message: format!("{}", e) })

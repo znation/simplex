@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt, rc::Rc, cell::RefCell, hash::Hash};
+use std::{collections::HashMap, fmt, rc::Rc, cell::RefCell};
 
 use crate::{astnode::ASTNode, errors::EvaluationError};
 
@@ -159,14 +159,15 @@ impl Structure {
         }
     }
 
-    pub fn string(&self) -> String {
+    /// Turns a Simplex list of Chars into a Rust String
+    pub fn string(&self) -> Result<String, EvaluationError> {
         let cons = match self {
             Structure::Cons(b) => &*b,
             _ => panic!(),
         };
         let car = &cons.0;
         let cdr = &cons.1;
-        if car.kind() == StructureKind::Nil {
+        let ret = if car.kind() == StructureKind::Nil {
             assert_eq!(cdr.kind(), StructureKind::Nil);
             "".to_string()
         } else {
@@ -174,9 +175,13 @@ impl Structure {
             if cdr.kind() == StructureKind::Nil {
                 car.char().to_string()
             } else {
-                car.char().to_string() + &cdr.string()
+                match cdr.string() {
+                    Ok(s) => car.char().to_string() + &s,
+                    Err(e) => return Err(e)
+                }
             }
-        }
+        };
+        Ok(ret)
     }
 
     pub fn dict(&self) -> HashMap<String, Structure> {
@@ -207,7 +212,14 @@ impl fmt::Display for Structure {
             Structure::Boolean(b) => write!(f, "{}", b),
             Structure::Byte(b) => write!(f, "{}", b),
             Structure::Char(c) => write!(f, "{}", c),
-            Structure::Cons(c) => write!(f, "(cons {} {})", c.0, c.1),
+            Structure::Cons(c) => {
+                // see if we can interpret it as a string;
+                // otherwise, write it as raw cons cells
+                match self.string() {
+                    Ok(s) => write!(f, "{}", s),
+                    Err(_) => write!(f, "(cons {} {})", c.0, c.1)
+                }
+            },
             Structure::Dict(d) => write!(f, "{}", fmt_dict(d)),
             Structure::FloatingPoint(v) => write!(f, "{}", v),
             Structure::Function(_) => todo!(),
@@ -263,7 +275,10 @@ mod tests {
         for string in strings {
             let s = Structure::from_string(string.clone());
             assert_eq!(s.kind(), StructureKind::Cons);
-            assert_eq!(s.string(), string);
+            match s.string() {
+                Ok(found) => assert_eq!(found, string),
+                Err(_) => assert!(false)
+            }
         }
     }
 }

@@ -10,6 +10,9 @@ use std::env;
 use std::fs;
 use std::io;
 use std::io::Read;
+use std::io::Write;
+use std::io::stdin;
+use std::io::stdout;
 
 use errors::EvaluationError;
 use evaluator::Evaluator;
@@ -33,28 +36,53 @@ fn main() -> Result<(), EvaluationError> {
         return Ok(());
     }
 
-    //if (isatty(fileno(stdin))) {
-    //Repl r;
-    //r.run();
-    //return Ok(());
-    //} else {
-
-    // Read an expression from stdin
-    let mut input = String::new();
-    let result = io::stdin().read_to_string(&mut input);
-    if let Err(e) = result {
-        return Err(EvaluationError {
-            message: e.to_string(),
-        });
+    if stdout_isatty() {
+        // Run a REPL
+        let mut eof = false;
+        let mut evaluator = Evaluator::new();
+        loop {
+            print!("(simplex)> ");
+            match stdout().flush() {
+                Ok(_) => (),
+                Err(e) => return Err(EvaluationError { message: format!("{}", e) })
+            }
+            let mut input = String::new();
+            match stdin().read_line(&mut input) {
+                Ok(count) => {
+                    if count == 0 {
+                        eof = true;
+                    }
+                },
+                Err(e) => return Err(EvaluationError { message: format!("{}", e) })
+            }
+            let result = evaluator.eval(input);
+            match result {
+                Ok(value) => println!("{}", value),
+                Err(e) => return Err(e)
+            }
+            if eof {
+                break;
+            }
+        }
+        Ok(())
+    } else {
+        // Read a single expression from stdin
+        let mut input = String::new();
+        let result = io::stdin().read_to_string(&mut input);
+        if let Err(e) = result {
+            return Err(EvaluationError {
+                message: e.to_string(),
+            });
+        }
+        let evaluation_result = evaluator.eval(input);
+        match evaluation_result {
+            Ok(value) => println!("{}", value),
+            Err(e) => return Err(e),
+        }
+        Ok(())
     }
-    let evaluation_result = evaluator.eval(input);
-    match evaluation_result {
-        Ok(value) => println!("{}", value),
-        Err(e) => return Err(e),
-    }
-    Ok(())
+}
 
-    //}
-
-    // return Ok(());
+fn stdout_isatty() -> bool {
+    unsafe { libc::isatty(libc::STDOUT_FILENO) != 0 }
 }
