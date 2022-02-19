@@ -215,11 +215,11 @@ impl Evaluator {
             Ok(result) => result,
             Err(e) => return Err(e),
         };
-        let function = match function_node {
-            Structure::Function(callable) => callable,
+        match function_node {
+            Structure::Function(callable) => callable.call(node, params),
+            Structure::Nil => Ok(Structure::Nil),
             _ => panic!(),
-        };
-        function.call(node, params)
+        }
     }
 
     pub fn eval_identifier(&self, node: ASTNode) -> EvaluationResult {

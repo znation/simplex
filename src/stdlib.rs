@@ -181,7 +181,6 @@ fn cons(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
 fn car(node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     assert_eq!(params.len(), 1);
     let cons = params[0].clone();
-    dbg!(&cons);
     match cons {
         Structure::Cons(c) => Ok(c.0),
         _ => Err(EvaluationError::type_mismatch(
@@ -368,6 +367,7 @@ impl Stdlib {
         // values
         let endl = "\n".to_string();
         symbols.insert("endl".to_string(), Structure::from_string(endl));
+        symbols.insert("()".to_string(), Structure::Nil);
         symbols.insert("nil".to_string(), Structure::Nil);
 
         // conversion

@@ -70,13 +70,13 @@ impl ASTNode {
         }
 
         if input.size() == 0 {
-            return Err(ParseError::from(
-                kind,
-                "(",
-                "EOF",
-                input.line(),
-                input.col(),
-            ));
+            // for ergonomics, interpret empty string as ()
+            return Ok(ASTNode {
+                kind: NodeKind::Identifier,
+                value: ASTValue::String("()".to_string()),
+                line: 0,
+                col: 0
+            })
         }
 
         let next = input.peek();
@@ -335,6 +335,11 @@ impl ASTNode {
             }
             ss.push(next);
             input.next();
+        }
+        if ss.chars().count() == 0 {
+            // this feels like a hack -- assume empty identifier is pointing to () (Nil)
+            // otherwise, we fail to parse () expressions
+            ss = "nil".to_string();
         }
         assert!(ss.chars().count() != 0);
         Ok(ASTNode {
