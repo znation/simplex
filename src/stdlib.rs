@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc, cell::RefCell};
+use std::{collections::HashMap, rc::Rc, cell::RefCell, io::{stdin, Read}};
 
 use crate::{
     astnode::ASTNode,
@@ -284,6 +284,47 @@ fn string(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
     Ok(Structure::from_string(result))
 }
 
+fn print(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+    for param in params {
+        println!("{}", param.string());
+    }
+    Ok(Structure::Nil)
+}
+
+const MAX_READ_COUNT: usize = 1073741824;
+
+fn read_bytes(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+    let maxCount = if params.len() == 0 { MAX_READ_COUNT } else {
+        if params.len() == 1 {
+            params[1].integer() as usize
+        } else {
+            return Err(EvaluationError { message: "too many parameters to `read_bytes`".to_string() })
+        }
+    };
+    let mut bytes: Vec<Structure> = Vec::new();
+    for byte in stdin().bytes().take(maxCount) {
+        match byte {
+            Ok(b) => bytes.push(Structure::Byte(b)),
+            Err(e) => return Err(EvaluationError { message: format!("{}", e) })
+        }
+    }
+    let ret = list_impl(bytes, 0);
+    Ok(ret)
+}
+
+fn read_line(_node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+    if params.len() != 0 {
+        return Err(EvaluationError { message: "too many parameters to `read_line`".to_string() });
+    }
+    let mut value = String::new();
+    let result = stdin().read_line(&mut value);
+    match result {
+        Ok(_) => (),
+        Err(e) => return Err(EvaluationError { message: format!("{}", e) })
+    }
+    Ok(Structure::from_string(value))
+}
+
 pub struct Stdlib {}
 impl Stdlib {
     pub fn symbols() -> SymbolTable {
@@ -321,8 +362,9 @@ impl Stdlib {
         symbols.insert("string".to_string(), Function::synthetic(string));
 
         // i/o
-        //symbols.insert("print".to_string(), Structure(print(symbols));
-        //symbols.insert("read".to_string(), Structure(read(symbols));
+        symbols.insert("print".to_string(), Function::synthetic(print));
+        symbols.insert("read_bytes".to_string(), Function::synthetic(read_bytes));
+        symbols.insert("read_line".to_string(), Function::synthetic(read_line));
         Rc::new(RefCell::new(symbols))
     }
 }
