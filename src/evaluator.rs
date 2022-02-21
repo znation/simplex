@@ -1,6 +1,8 @@
 use crate::structure::Backtrace;
 use crate::structure::Empty;
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use crate::astnode::ASTNode;
 use crate::astnode::NodeKind;
@@ -88,7 +90,7 @@ impl Evaluator {
         let parameter_list = children[1].children()[0].children().clone();
         let function_body = FunctionBody::Lambda(|_node, outer_symbols, outer_backtrace, parameter_list, params| {
             let body = parameter_list[parameter_list.len() - 1].clone();
-            let symbols = outer_symbols;
+            let symbols = Rc::new(RefCell::new(outer_symbols.borrow().clone()));
             symbols.borrow_mut().extend(dict_of_params(&parameter_list, &params));
             let mut e = Evaluator {
                 symbols,
