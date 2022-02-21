@@ -1,3 +1,4 @@
+use crate::structure::Backtrace;
 use crate::structure::Empty;
 use std::collections::HashMap;
 
@@ -32,6 +33,7 @@ fn dict_of_params(
 
 pub struct Evaluator {
     symbols: SymbolTable,
+    backtrace: Backtrace
 }
 
 impl Evaluator {
@@ -44,6 +46,7 @@ impl Evaluator {
     pub fn new() -> Evaluator {
         let mut ret = Evaluator {
             symbols: SymbolTable::empty(),
+            backtrace: Backtrace::empty()
         };
 
         // Rust-native parts of the standard library
@@ -83,15 +86,17 @@ impl Evaluator {
         assert_eq!(children[0].string(), "lambda");
         assert_eq!(children[1].kind(), NodeKind::OptionalParameterList);
         let parameter_list = children[1].children()[0].children().clone();
-        let function_body = FunctionBody::Lambda(|_node, outer_symbols, parameter_list, params| {
+        let function_body = FunctionBody::Lambda(|_node, outer_symbols, outer_backtrace, parameter_list, params| {
             let body = parameter_list[parameter_list.len() - 1].clone();
             let symbols = outer_symbols;
             symbols.borrow_mut().extend(dict_of_params(&parameter_list, &params));
-            let mut e = Evaluator { symbols };
+            let mut e = Evaluator {
+                symbols,
+                backtrace: outer_backtrace
+            };
             e.eval_node(body)
         });
         let function = Function {
-            outer_symbols: self.symbols.clone(),
             parameter_list,
             function: function_body,
         };
@@ -148,7 +153,10 @@ impl Evaluator {
         assert_eq!(children[1].kind(), NodeKind::OptionalParameterList);
         let parameters = children[1].children()[0].children();
         if parameters.len() % 2 != 0 {
-            return Err(EvaluationError { message: "cond must take an even number of parameters (pairs of condition and expression)".to_string() });
+            return Err(EvaluationError {
+                message: "cond must take an even number of parameters (pairs of condition and expression)".to_string(),
+                backtrace: self.backtrace.clone()
+             });
         }
         let mut i = 0;
         while i < parameters.len() {
@@ -165,6 +173,7 @@ impl Evaluator {
         Err(EvaluationError {
             message: "`cond` expression did not return a value (no condition evaluated to true)"
                 .to_string(),
+                backtrace: self.backtrace.clone()
         })
     }
 
@@ -207,7 +216,7 @@ impl Evaluator {
             }
         }
 
-        let function_node = match self.eval_node(first_child) {
+        let function_node = match self.eval_node(first_child.clone()) {
             Ok(result) => result,
             Err(e) => return Err(e),
         };
@@ -215,11 +224,17 @@ impl Evaluator {
             Ok(result) => result,
             Err(e) => return Err(e),
         };
-        match function_node {
-            Structure::Function(callable) => callable.call(node, params),
+        self.backtrace.borrow_mut().push((first_child.string(), node.line(), node.col()));
+        let result = match function_node {
+            Structure::Function(callable) => callable.call(node,
+                self.symbols.clone(),
+                self.backtrace.clone(),
+                params),
             Structure::Nil => Ok(Structure::Nil),
             _ => panic!(),
-        }
+        };
+        self.backtrace.borrow_mut().pop();
+        result
     }
 
     pub fn eval_identifier(&self, node: ASTNode) -> EvaluationResult {
@@ -237,6 +252,7 @@ impl Evaluator {
             None => {
                 Err(EvaluationError {
                     message: format!("undeclared identifier: {}", str),
+                    backtrace: self.backtrace.clone()
                 })
             },
         }

@@ -6,6 +6,7 @@ mod parser;
 mod stdlib;
 mod structure;
 
+use crate::structure::Empty;
 use std::env;
 use std::fs;
 use std::io;
@@ -16,6 +17,8 @@ use std::io::stdout;
 
 use errors::EvaluationError;
 use evaluator::Evaluator;
+
+use crate::structure::Backtrace;
 
 fn main() -> Result<(), EvaluationError> {
     let count = env::args().count();
@@ -44,7 +47,7 @@ fn main() -> Result<(), EvaluationError> {
             print!("(simplex)> ");
             match stdout().flush() {
                 Ok(_) => (),
-                Err(e) => return Err(EvaluationError { message: format!("{}", e) })
+                Err(e) => return Err(EvaluationError { message: format!("{}", e), backtrace: Backtrace::empty() })
             }
             let mut input = String::new();
             match stdin().read_line(&mut input) {
@@ -53,7 +56,7 @@ fn main() -> Result<(), EvaluationError> {
                         eof = true;
                     }
                 },
-                Err(e) => return Err(EvaluationError { message: format!("{}", e) })
+                Err(e) => return Err(EvaluationError { message: format!("{}", e), backtrace: Backtrace::empty() })
             }
             let result = evaluator.eval(input);
             match result {
@@ -72,6 +75,7 @@ fn main() -> Result<(), EvaluationError> {
         if let Err(e) = result {
             return Err(EvaluationError {
                 message: e.to_string(),
+                backtrace: Backtrace::empty()
             });
         }
         let evaluation_result = evaluator.eval(input);

@@ -1,6 +1,6 @@
 use crate::{
     astnode::{ASTNode, NodeKind},
-    structure::StructureKind,
+    structure::{StructureKind, Backtrace, Empty},
 };
 
 #[derive(Debug, PartialEq)]
@@ -32,18 +32,21 @@ impl ParseError {
 #[derive(Debug, PartialEq)]
 pub struct EvaluationError {
     pub message: String,
+    pub backtrace: Backtrace
 }
 
 impl EvaluationError {
     pub fn from_parse_error(e: ParseError) -> EvaluationError {
-        EvaluationError { message: e.message }
+        EvaluationError { message: e.message, backtrace: Backtrace::empty() }
     }
 
     pub fn type_mismatch(
         node: &ASTNode,
+        backtrace: Backtrace,
         expected: StructureKind,
         found: StructureKind,
     ) -> EvaluationError {
+        dbg!(&backtrace);
         EvaluationError {
             message: format!(
                 "{}|{}: type mismatch error: expected {:?}, found {:?}",
@@ -52,6 +55,7 @@ impl EvaluationError {
                 expected,
                 found
             ),
+            backtrace
         }
     }
 }

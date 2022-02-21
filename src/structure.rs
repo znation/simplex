@@ -3,6 +3,7 @@ use std::{collections::HashMap, fmt, rc::Rc, cell::RefCell};
 use crate::{astnode::ASTNode, errors::EvaluationError};
 
 pub type SymbolTable = Rc<RefCell<HashMap<String, Structure>>>;
+pub type Backtrace = Rc<RefCell<Vec<(String, i64, i64)>>>;
 pub type EvaluationResult = Result<Structure, EvaluationError>;
 
 pub trait Empty {
@@ -11,6 +12,11 @@ pub trait Empty {
 impl Empty for SymbolTable {
     fn empty() -> Self {
         Rc::new(RefCell::new(HashMap::new()))
+    }
+}
+impl Empty for Backtrace {
+    fn empty() -> Self {
+        Rc::new(RefCell::new(Vec::new()))
     }
 }
 
@@ -33,41 +39,41 @@ pub enum FunctionBody {
     Lambda(
         fn(
             node: ASTNode,
-            outerSymbols: SymbolTable,
+            outer_symbols: SymbolTable,
+            outer_backtrace: Backtrace,
             parameterList: Vec<ASTNode>,
             params: Vec<Structure>,
         ) -> EvaluationResult,
     ),
-    Native(fn(node: ASTNode, params: Vec<Structure>) -> EvaluationResult),
+    Native(fn(node: ASTNode, outer_backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult),
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Function {
-    pub outer_symbols: SymbolTable,
     pub parameter_list: Vec<ASTNode>,
     pub function: FunctionBody,
 }
 
 impl Function {
     pub fn synthetic(
-        function: fn(node: ASTNode, params: Vec<Structure>) -> EvaluationResult,
+        function: fn(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult
     ) -> Structure {
         Structure::Function(Function {
-            outer_symbols: SymbolTable::empty(),
             parameter_list: Vec::new(),
             function: FunctionBody::Native(function),
         })
     }
 
-    pub fn call(&self, node: ASTNode, params: Vec<Structure>) -> EvaluationResult {
+    pub fn call(&self, node: ASTNode, outer_symbols: SymbolTable, outer_backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
         match self.function {
             FunctionBody::Lambda(lambda) => lambda(
                 node,
-                self.outer_symbols.clone(),
+                outer_symbols,
+                outer_backtrace,
                 self.parameter_list.clone(),
                 params,
             ),
-            FunctionBody::Native(native) => native(node, params),
+            FunctionBody::Native(native) => native(node, outer_backtrace, params),
         }
     }
 }
@@ -160,7 +166,7 @@ impl Structure {
     }
 
     /// Turns a Simplex list of Chars into a Rust String
-    pub fn string(&self, node: Option<&ASTNode>) -> Result<String, EvaluationError> {
+    pub fn string(&self, backtrace: Backtrace, node: Option<&ASTNode>) -> Result<String, EvaluationError> {
         let invalid_node = ASTNode::invalid();
         let node = node.unwrap_or(&invalid_node);
         let cons = match self {
@@ -178,13 +184,15 @@ impl Structure {
                 if cdr.kind() == StructureKind::Nil {
                     car.char().to_string()
                 } else {
-                    match cdr.string(Some(node)) {
+                    match cdr.string(backtrace, Some(node)) {
                         Ok(s) => car.char().to_string() + &s,
                         Err(e) => return Err(e)
                     }
                 }
             } else {
-                return Err(EvaluationError::type_mismatch(&node, StructureKind::Char, car.kind()));
+                return Err(EvaluationError::type_mismatch(&node,
+                    backtrace,
+                    StructureKind::Char, car.kind()));
             }
         };
         Ok(ret)
@@ -221,7 +229,7 @@ impl fmt::Display for Structure {
             Structure::Cons(c) => {
                 // see if we can interpret it as a string;
                 // otherwise, write it as raw cons cells
-                match self.string(None) {
+                match self.string(Backtrace::empty(), None) {
                     Ok(s) => write!(f, "{}", s),
                     Err(_) => write!(f, "(cons {} {})", c.0, c.1)
                 }
@@ -284,7 +292,7 @@ mod tests {
         for string in strings {
             let s = Structure::from_string(string.clone());
             assert_eq!(s.kind(), StructureKind::Cons);
-            match s.string(None) {
+            match s.string(Backtrace::empty(), None) {
                 Ok(found) => assert_eq!(found, string),
                 Err(_) => assert!(false)
             }
