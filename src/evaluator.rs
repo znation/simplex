@@ -348,4 +348,35 @@ mod tests {
         //CHECK_MATH_2!(e, /, (- 1.5), 2, (- 0.75));
         CHECK_MATH_2!(e, /, 0.5, 2.0, 0.25);
     }
+
+    #[test]
+    fn test_if_expressions() {
+        let mut e = Evaluator::new();
+        assert_eq!(e.eval("(if false 1 2)"), Ok(Structure::Integer(2)));
+        assert_eq!(e.eval("(if true 1 2)"), Ok(Structure::Integer(1)));
+
+        // make sure the false path doesn't
+        // get executed, by using an undeclared identifier
+        assert_eq!(e.eval("(if true 1 missing2)"), Ok(Structure::Integer(1)));
+        assert_eq!(e.eval("(if false missing1 2)"), Ok(Structure::Integer(2)));
+    }
+
+    #[test]
+    fn test_cond_expressions() {
+        let mut e = Evaluator::new();
+        assert_eq!(e.eval("(cond
+            false 1
+            true 2
+            false 3
+            true 4)"), Ok(Structure::Integer(2)));
+        
+
+        // make sure the false or redundant paths
+        // don't get executed, by using an undeclared identifier
+        assert_eq!(e.eval("(cond
+            false missing1
+            false missing2
+            true 3
+            true missing4)"), Ok(Structure::Integer(3)));
+    }
 }
