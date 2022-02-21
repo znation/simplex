@@ -230,7 +230,6 @@ impl Evaluator {
                 self.symbols.clone(),
                 self.backtrace.clone(),
                 params),
-            Structure::Nil => Ok(Structure::Nil),
             _ => panic!(),
         };
         self.backtrace.borrow_mut().pop();
