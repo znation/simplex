@@ -26,7 +26,7 @@ fn dict_of_params(
         let param = &parameter_list[i];
         assert_eq!(param.kind(), NodeKind::Identifier);
         let value = parameter_values[i].clone();
-        ret.insert(param.string(), value);
+        ret.insert(param.string().clone(), value);
     }
     ret
 }
@@ -107,12 +107,12 @@ impl Evaluator {
         assert_eq!(node.kind(), NodeKind::Expression);
         let children = node.children();
         assert_eq!(children.len(), 2);
-        let child0 = children[0].clone();
-        let child1 = children[1].clone();
+        let child0 = children.get(0).unwrap();
+        let child1 = children.get(1).unwrap();
         assert_eq!(child0.kind(), NodeKind::Identifier);
         assert_eq!(child0.string(), "let");
         assert_eq!(child1.kind(), NodeKind::OptionalParameterList);
-        let parameter_list = child1.children()[0].clone();
+        let parameter_list = child1.children().get(0).unwrap();
         let id_with_value = parameter_list.children();
         assert_eq!(id_with_value.len(), 2);
         let id = id_with_value.get(0).unwrap();
@@ -121,7 +121,7 @@ impl Evaluator {
             Ok(result) => result,
             Err(e) => return Err(e),
         };
-        self.symbols.insert(id.string(), new_symbol);
+        self.symbols.insert(id.string().clone(), new_symbol);
         Ok(Structure::Boolean(true))
     }
     pub fn eval_if_expression(&mut self, node: &ASTNode) -> EvaluationResult {
@@ -224,11 +224,11 @@ impl Evaluator {
             Ok(result) => result,
             Err(e) => return Err(e),
         };
-        self.backtrace.push((first_child.string(), node.line(), node.col()));
+        self.backtrace.push((first_child.string().clone(), node.line(), node.col()));
         let result = match function_node {
             Structure::Function(callable) => callable.call(node,
-                self.symbols.clone(),
-                self.backtrace.clone(),
+                &self.symbols,
+                &self.backtrace,
                 params),
             _ => panic!(),
         };
@@ -244,7 +244,7 @@ impl Evaluator {
             return Ok(Structure::Boolean(false));
         }
 
-        let result = self.symbols.get(&str);
+        let result = self.symbols.get(str);
         match result {
             Some(structure) => Ok(structure.clone()),
             None => {
@@ -260,7 +260,7 @@ impl Evaluator {
         assert_eq!(node.kind(), NodeKind::Literal);
         let children = node.children();
         assert_eq!(children.len(), 1);
-        let child = children[0].clone();
+        let child = children.get(0).unwrap();
         match child.kind() {
             NodeKind::FloatingPoint => Ok(Structure::FloatingPoint(child.floating_point())),
             NodeKind::Integer => Ok(Structure::Integer(child.integer())),

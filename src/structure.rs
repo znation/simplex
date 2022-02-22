@@ -64,16 +64,16 @@ impl Function {
         })
     }
 
-    pub fn call(&self, node: &ASTNode, outer_symbols: SymbolTable, outer_backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+    pub fn call(&self, node: &ASTNode, outer_symbols: &SymbolTable, outer_backtrace: &Backtrace, params: Vec<Structure>) -> EvaluationResult {
         match self.function {
             FunctionBody::Lambda(lambda) => lambda(
                 node.clone(),
-                outer_symbols,
-                outer_backtrace,
+                outer_symbols.clone(),
+                outer_backtrace.clone(),
                 self.parameter_list.clone(),
                 params,
             ),
-            FunctionBody::Native(native) => native(node.clone(), outer_backtrace, params),
+            FunctionBody::Native(native) => native(node.clone(), outer_backtrace.clone(), params),
         }
     }
 }
@@ -97,7 +97,7 @@ impl Structure {
         Structure::Invalid
     }
 
-    pub fn from_string(s: String) -> Structure {
+    pub fn from_string(s: &String) -> Structure {
         // create cons from string
         let len = s.len();
         if len == 0 {
@@ -108,7 +108,8 @@ impl Structure {
             let cdr = if len == 1 {
                 Structure::Nil
             } else {
-                Structure::from_string(s[1..s.len()].to_string())
+                let recursive_input = s[1..s.len()].to_string();
+                Structure::from_string(&recursive_input)
             };
             Structure::Cons(Box::new((car, cdr)))
         }
@@ -198,9 +199,9 @@ impl Structure {
         Ok(ret)
     }
 
-    pub fn dict(&self) -> HashMap<String, Structure> {
+    pub fn dict(&self) -> &HashMap<String, Structure> {
         match self {
-            Structure::Dict(d) => d.clone(),
+            Structure::Dict(d) => d,
             _ => panic!(),
         }
     }
@@ -290,7 +291,7 @@ mod tests {
             "abc".to_string(),
         ];
         for string in strings {
-            let s = Structure::from_string(string.clone());
+            let s = Structure::from_string(&string);
             assert_eq!(s.kind(), StructureKind::Cons);
             match s.string(Backtrace::empty(), None) {
                 Ok(found) => assert_eq!(found, string),

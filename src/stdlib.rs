@@ -282,7 +282,7 @@ fn dict_set(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Eval
         Err(e) => return Err(e)
     };
     let value = params[1].clone();
-    let mut dict = params[2].dict();
+    let mut dict = params[2].dict().clone();
     dict.insert(key, value);
     Ok(Structure::Dict(dict))
 }
@@ -302,7 +302,7 @@ fn string(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Evalua
     }
     let param = params[0].clone();
     match param.string(backtrace, Some(&node)) {
-        Ok(s) => Ok(Structure::from_string(s)),
+        Ok(s) => Ok(Structure::from_string(&s)),
         Err(e) => Err(e)
     }
 }
@@ -353,7 +353,7 @@ fn read_line(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Ev
             backtrace: backtrace,
      })
     }
-    Ok(Structure::from_string(value))
+    Ok(Structure::from_string(&value))
 }
 
 pub struct Stdlib {}
@@ -385,7 +385,7 @@ impl Stdlib {
 
         // values
         let endl = "\n".to_string();
-        symbols.insert("endl".to_string(), Structure::from_string(endl));
+        symbols.insert("endl".to_string(), Structure::from_string(&endl));
         symbols.insert("()".to_string(), Structure::Nil);
         symbols.insert("nil".to_string(), Structure::Nil);
 

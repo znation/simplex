@@ -431,9 +431,9 @@ impl ASTNode {
         }
     }
 
-    pub fn string(&self) -> String {
+    pub fn string(&self) -> &String {
         match &self.value {
-            ASTValue::String(s) => s.clone(),
+            ASTValue::String(s) => s,
             _ => panic!(),
         }
     }
