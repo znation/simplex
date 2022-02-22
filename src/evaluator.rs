@@ -1,8 +1,6 @@
 use crate::structure::Backtrace;
 use crate::structure::Empty;
-use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::Rc;
 
 use crate::astnode::ASTNode;
 use crate::astnode::NodeKind;
@@ -40,8 +38,8 @@ pub struct Evaluator {
 
 impl Evaluator {
     pub fn add_symbols(&mut self, new_symbols: SymbolTable) {
-        for (k, v) in &*new_symbols.borrow() {
-            self.symbols.borrow_mut().insert(k.clone(), v.clone());
+        for (k, v) in new_symbols {
+            self.symbols.insert(k, v);
         }
     }
 
@@ -90,8 +88,8 @@ impl Evaluator {
         let parameter_list = children[1].children()[0].children().clone();
         let function_body = FunctionBody::Lambda(|_node, outer_symbols, outer_backtrace, parameter_list, params| {
             let body = parameter_list[parameter_list.len() - 1].clone();
-            let symbols = Rc::new(RefCell::new(outer_symbols.borrow().clone()));
-            symbols.borrow_mut().extend(dict_of_params(&parameter_list, &params));
+            let mut symbols = outer_symbols.clone();
+            symbols.extend(dict_of_params(&parameter_list, &params));
             let mut e = Evaluator {
                 symbols,
                 backtrace: outer_backtrace
@@ -123,7 +121,7 @@ impl Evaluator {
             Ok(result) => result,
             Err(e) => return Err(e),
         };
-        self.symbols.borrow_mut().insert(id.string(), new_symbol);
+        self.symbols.insert(id.string(), new_symbol);
         Ok(Structure::Boolean(true))
     }
     pub fn eval_if_expression(&mut self, node: ASTNode) -> EvaluationResult {
@@ -226,7 +224,7 @@ impl Evaluator {
             Ok(result) => result,
             Err(e) => return Err(e),
         };
-        self.backtrace.borrow_mut().push((first_child.string(), node.line(), node.col()));
+        self.backtrace.push((first_child.string(), node.line(), node.col()));
         let result = match function_node {
             Structure::Function(callable) => callable.call(node,
                 self.symbols.clone(),
@@ -234,7 +232,7 @@ impl Evaluator {
                 params),
             _ => panic!(),
         };
-        self.backtrace.borrow_mut().pop();
+        self.backtrace.pop();
         result
     }
 
@@ -246,8 +244,7 @@ impl Evaluator {
             return Ok(Structure::Boolean(false));
         }
 
-        let symbols = self.symbols.borrow();
-        let result = symbols.get(&str);
+        let result = self.symbols.get(&str);
         match result {
             Some(structure) => Ok(structure.clone()),
             None => {

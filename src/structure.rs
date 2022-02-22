@@ -1,9 +1,9 @@
-use std::{collections::HashMap, fmt, rc::Rc, cell::RefCell};
+use std::{collections::HashMap, fmt};
 
 use crate::{astnode::ASTNode, errors::EvaluationError};
 
-pub type SymbolTable = Rc<RefCell<HashMap<String, Structure>>>;
-pub type Backtrace = Rc<RefCell<Vec<(String, i64, i64)>>>;
+pub type SymbolTable = HashMap<String, Structure>;
+pub type Backtrace = Vec<(String, i64, i64)>;
 pub type EvaluationResult = Result<Structure, EvaluationError>;
 
 pub trait Empty {
@@ -11,12 +11,12 @@ pub trait Empty {
 }
 impl Empty for SymbolTable {
     fn empty() -> Self {
-        Rc::new(RefCell::new(HashMap::new()))
+        HashMap::new()
     }
 }
 impl Empty for Backtrace {
     fn empty() -> Self {
-        Rc::new(RefCell::new(Vec::new()))
+        Vec::new()
     }
 }
 

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc, cell::RefCell, io::{stdin, Read}};
+use std::{collections::HashMap, io::{stdin, Read}};
 
 use crate::{
     astnode::ASTNode,
@@ -396,7 +396,7 @@ impl Stdlib {
         symbols.insert("print".to_string(), Function::synthetic(print));
         symbols.insert("read_bytes".to_string(), Function::synthetic(read_bytes));
         symbols.insert("read_line".to_string(), Function::synthetic(read_line));
-        Rc::new(RefCell::new(symbols))
+        symbols
     }
 }
 
