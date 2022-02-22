@@ -60,7 +60,7 @@ impl Evaluator {
         ret
     }
 
-    pub fn eval_node(&mut self, node: ASTNode) -> EvaluationResult {
+    pub fn eval_node(&mut self, node: &ASTNode) -> EvaluationResult {
         match node.kind() {
             crate::astnode::NodeKind::Expression => self.eval_expression(node),
             crate::astnode::NodeKind::Identifier => self.eval_identifier(node),
@@ -75,19 +75,19 @@ impl Evaluator {
             Ok(n) => n,
             Err(e) => return Err(EvaluationError::from_parse_error(e)),
         };
-        self.eval_node(node)
+        self.eval_node(&node)
     }
 
-    pub fn eval_lambda_expression(&self, node: ASTNode) -> EvaluationResult {
+    pub fn eval_lambda_expression(&self, node: &ASTNode) -> EvaluationResult {
         assert_eq!(node.kind(), NodeKind::Expression);
         let children = node.children();
         assert_eq!(children.len(), 2);
         assert_eq!(children[0].kind(), NodeKind::Identifier);
         assert_eq!(children[0].string(), "lambda");
         assert_eq!(children[1].kind(), NodeKind::OptionalParameterList);
-        let parameter_list = children[1].children()[0].children().clone();
+        let parameter_list = children[1].children()[0].children();
         let function_body = FunctionBody::Lambda(|_node, outer_symbols, outer_backtrace, parameter_list, params| {
-            let body = parameter_list[parameter_list.len() - 1].clone();
+            let body = parameter_list.get(parameter_list.len() - 1).unwrap();
             let mut symbols = outer_symbols.clone();
             symbols.extend(dict_of_params(&parameter_list, &params));
             let mut e = Evaluator {
@@ -97,13 +97,13 @@ impl Evaluator {
             e.eval_node(body)
         });
         let function = Function {
-            parameter_list,
+            parameter_list: parameter_list.clone(),
             function: function_body,
         };
         Ok(Structure::Function(function))
     }
 
-    pub fn eval_let_expression(&mut self, node: ASTNode) -> EvaluationResult {
+    pub fn eval_let_expression(&mut self, node: &ASTNode) -> EvaluationResult {
         assert_eq!(node.kind(), NodeKind::Expression);
         let children = node.children();
         assert_eq!(children.len(), 2);
@@ -115,16 +115,16 @@ impl Evaluator {
         let parameter_list = child1.children()[0].clone();
         let id_with_value = parameter_list.children();
         assert_eq!(id_with_value.len(), 2);
-        let id = id_with_value[0].clone();
+        let id = id_with_value.get(0).unwrap();
         assert_eq!(id.kind(), NodeKind::Identifier);
-        let new_symbol = match self.eval_node(id_with_value[1].clone()) {
+        let new_symbol = match self.eval_node(id_with_value.get(1).unwrap()) {
             Ok(result) => result,
             Err(e) => return Err(e),
         };
         self.symbols.insert(id.string(), new_symbol);
         Ok(Structure::Boolean(true))
     }
-    pub fn eval_if_expression(&mut self, node: ASTNode) -> EvaluationResult {
+    pub fn eval_if_expression(&mut self, node: &ASTNode) -> EvaluationResult {
         assert_eq!(node.kind(), NodeKind::Expression);
         let children = node.children();
         assert_eq!(children.len(), 2);
@@ -133,18 +133,18 @@ impl Evaluator {
         assert_eq!(children[1].kind(), NodeKind::OptionalParameterList);
         let parameters = children[1].children()[0].children();
         assert_eq!(parameters.len(), 3);
-        let result = self.eval_node(parameters[0].clone());
+        let result = self.eval_node(parameters.get(0).unwrap());
         let condition = match result {
             Ok(c) => c.boolean(),
             Err(e) => return Err(e),
         };
         if condition {
-            self.eval_node(parameters[1].clone())
+            self.eval_node(parameters.get(1).unwrap())
         } else {
-            self.eval_node(parameters[2].clone())
+            self.eval_node(parameters.get(2).unwrap())
         }
     }
-    pub fn eval_cond_expression(&mut self, node: ASTNode) -> EvaluationResult {
+    pub fn eval_cond_expression(&mut self, node: &ASTNode) -> EvaluationResult {
         assert_eq!(node.kind(), NodeKind::Expression);
         let children = node.children();
         assert_eq!(children.len(), 2);
@@ -160,13 +160,13 @@ impl Evaluator {
         }
         let mut i = 0;
         while i < parameters.len() {
-            let result = self.eval_node(parameters[i].clone());
+            let result = self.eval_node(parameters.get(i).unwrap());
             let condition = match result {
                 Ok(s) => s.boolean(),
                 Err(e) => return Err(e),
             };
             if condition {
-                return self.eval_node(parameters[i + 1].clone());
+                return self.eval_node(parameters.get(i+1).unwrap());
             }
             i += 2;
         }
@@ -177,19 +177,19 @@ impl Evaluator {
         })
     }
 
-    pub fn eval_parameters(&mut self, node: ASTNode) -> Result<Vec<Structure>, EvaluationError> {
+    pub fn eval_parameters(&mut self, node: &ASTNode) -> Result<Vec<Structure>, EvaluationError> {
         if node.kind() == NodeKind::OptionalParameterList {
             let children = node.children();
             if children.is_empty() {
                 return Ok(Vec::new());
             }
             assert_eq!(children.len(), 1);
-            return self.eval_parameters(children[0].clone());
+            return self.eval_parameters(children.get(0).unwrap());
         }
 
         assert_eq!(node.kind(), NodeKind::ParameterList);
         let mut ret = Vec::new();
-        for child in node.children().clone() {
+        for child in node.children() {
             let result = self.eval_node(child);
             match result {
                 Ok(s) => ret.push(s),
@@ -199,11 +199,11 @@ impl Evaluator {
         Ok(ret)
     }
 
-    pub fn eval_expression(&mut self, node: ASTNode) -> EvaluationResult {
+    pub fn eval_expression(&mut self, node: &ASTNode) -> EvaluationResult {
         assert_eq!(node.kind(), NodeKind::Expression);
         let children = node.children();
         assert_eq!(children.len(), 2);
-        let first_child = children[0].clone();
+        let first_child = children.get(0).unwrap();
         if first_child.kind() == NodeKind::Identifier {
             if first_child.string() == "lambda" {
                 return self.eval_lambda_expression(node);
@@ -216,11 +216,11 @@ impl Evaluator {
             }
         }
 
-        let function_node = match self.eval_node(first_child.clone()) {
+        let function_node = match self.eval_node(first_child) {
             Ok(result) => result,
             Err(e) => return Err(e),
         };
-        let params = match self.eval_parameters(children[1].clone()) {
+        let params = match self.eval_parameters(children.get(1).unwrap()) {
             Ok(result) => result,
             Err(e) => return Err(e),
         };
@@ -236,7 +236,7 @@ impl Evaluator {
         result
     }
 
-    pub fn eval_identifier(&self, node: ASTNode) -> EvaluationResult {
+    pub fn eval_identifier(&self, node: &ASTNode) -> EvaluationResult {
         let str = node.string();
         if str == "true" {
             return Ok(Structure::Boolean(true));
@@ -256,7 +256,7 @@ impl Evaluator {
         }
     }
 
-    pub fn eval_literal(&self, node: ASTNode) -> EvaluationResult {
+    pub fn eval_literal(&self, node: &ASTNode) -> EvaluationResult {
         assert_eq!(node.kind(), NodeKind::Literal);
         let children = node.children();
         assert_eq!(children.len(), 1);
@@ -270,11 +270,11 @@ impl Evaluator {
         }
     }
 
-    pub fn eval_program(&mut self, node: ASTNode) -> EvaluationResult {
+    pub fn eval_program(&mut self, node: &ASTNode) -> EvaluationResult {
         let mut ret = Ok(Structure::new());
         assert_eq!(node.kind(), NodeKind::Program);
         for exp in node.children() {
-            ret = self.eval_node(exp.clone());
+            ret = self.eval_node(exp);
         }
         ret
     }

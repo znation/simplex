@@ -64,16 +64,16 @@ impl Function {
         })
     }
 
-    pub fn call(&self, node: ASTNode, outer_symbols: SymbolTable, outer_backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+    pub fn call(&self, node: &ASTNode, outer_symbols: SymbolTable, outer_backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
         match self.function {
             FunctionBody::Lambda(lambda) => lambda(
-                node,
+                node.clone(),
                 outer_symbols,
                 outer_backtrace,
                 self.parameter_list.clone(),
                 params,
             ),
-            FunctionBody::Native(native) => native(node, outer_backtrace, params),
+            FunctionBody::Native(native) => native(node.clone(), outer_backtrace, params),
         }
     }
 }
