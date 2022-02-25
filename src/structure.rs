@@ -45,7 +45,9 @@ pub enum FunctionBody {
             params: Vec<Structure>,
         ) -> EvaluationResult,
     ),
-    Native(fn(node: ASTNode, outer_backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult),
+    Native(
+        fn(node: ASTNode, outer_backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult,
+    ),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -56,7 +58,11 @@ pub struct Function {
 
 impl Function {
     pub fn synthetic(
-        function: fn(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult
+        function: fn(
+            node: ASTNode,
+            backtrace: Backtrace,
+            params: Vec<Structure>,
+        ) -> EvaluationResult,
     ) -> Structure {
         Structure::Function(Function {
             parameter_list: Vec::new(),
@@ -64,7 +70,13 @@ impl Function {
         })
     }
 
-    pub fn call(&self, node: &ASTNode, outer_symbols: &SymbolTable, outer_backtrace: &Backtrace, params: Vec<Structure>) -> EvaluationResult {
+    pub fn call(
+        &self,
+        node: &ASTNode,
+        outer_symbols: &SymbolTable,
+        outer_backtrace: &Backtrace,
+        params: Vec<Structure>,
+    ) -> EvaluationResult {
         match self.function {
             FunctionBody::Lambda(lambda) => lambda(
                 node.clone(),
@@ -167,7 +179,11 @@ impl Structure {
     }
 
     /// Turns a Simplex list of Chars into a Rust String
-    pub fn string(&self, backtrace: Backtrace, node: Option<&ASTNode>) -> Result<String, EvaluationError> {
+    pub fn string(
+        &self,
+        backtrace: Backtrace,
+        node: Option<&ASTNode>,
+    ) -> Result<String, EvaluationError> {
         let invalid_node = ASTNode::invalid();
         let node = node.unwrap_or(&invalid_node);
         let cons = match self {
@@ -187,13 +203,16 @@ impl Structure {
                 } else {
                     match cdr.string(backtrace, Some(node)) {
                         Ok(s) => car.char().to_string() + &s,
-                        Err(e) => return Err(e)
+                        Err(e) => return Err(e),
                     }
                 }
             } else {
-                return Err(EvaluationError::type_mismatch(&node,
+                return Err(EvaluationError::type_mismatch(
+                    &node,
                     backtrace,
-                    StructureKind::Char, car.kind()));
+                    StructureKind::Char,
+                    car.kind(),
+                ));
             }
         };
         Ok(ret)
@@ -232,9 +251,9 @@ impl fmt::Display for Structure {
                 // otherwise, write it as raw cons cells
                 match self.string(Backtrace::empty(), None) {
                     Ok(s) => write!(f, "{}", s),
-                    Err(_) => write!(f, "(cons {} {})", c.0, c.1)
+                    Err(_) => write!(f, "(cons {} {})", c.0, c.1),
                 }
-            },
+            }
             Structure::Dict(d) => write!(f, "{}", fmt_dict(d)),
             Structure::FloatingPoint(v) => write!(f, "{}", v),
             Structure::Function(function) => match function.function {
@@ -295,7 +314,7 @@ mod tests {
             assert_eq!(s.kind(), StructureKind::Cons);
             match s.string(Backtrace::empty(), None) {
                 Ok(found) => assert_eq!(found, string),
-                Err(_) => assert!(false)
+                Err(_) => assert!(false),
             }
         }
     }

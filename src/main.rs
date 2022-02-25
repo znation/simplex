@@ -10,10 +10,10 @@ use crate::structure::Empty;
 use std::env;
 use std::fs;
 use std::io;
-use std::io::Read;
-use std::io::Write;
 use std::io::stdin;
 use std::io::stdout;
+use std::io::Read;
+use std::io::Write;
 
 use errors::EvaluationError;
 use evaluator::Evaluator;
@@ -47,7 +47,12 @@ fn main() -> Result<(), EvaluationError> {
             print!("(simplex)> ");
             match stdout().flush() {
                 Ok(_) => (),
-                Err(e) => return Err(EvaluationError { message: format!("{}", e), backtrace: Backtrace::empty() })
+                Err(e) => {
+                    return Err(EvaluationError {
+                        message: format!("{}", e),
+                        backtrace: Backtrace::empty(),
+                    })
+                }
             }
             let mut input = String::new();
             match stdin().read_line(&mut input) {
@@ -55,13 +60,18 @@ fn main() -> Result<(), EvaluationError> {
                     if count == 0 {
                         eof = true;
                     }
-                },
-                Err(e) => return Err(EvaluationError { message: format!("{}", e), backtrace: Backtrace::empty() })
+                }
+                Err(e) => {
+                    return Err(EvaluationError {
+                        message: format!("{}", e),
+                        backtrace: Backtrace::empty(),
+                    })
+                }
             }
             let result = evaluator.eval(input);
             match result {
                 Ok(value) => println!("{}", value),
-                Err(e) => return Err(e)
+                Err(e) => return Err(e),
             }
             if eof {
                 break;
@@ -75,7 +85,7 @@ fn main() -> Result<(), EvaluationError> {
         if let Err(e) = result {
             return Err(EvaluationError {
                 message: e.to_string(),
-                backtrace: Backtrace::empty()
+                backtrace: Backtrace::empty(),
             });
         }
         let evaluation_result = evaluator.eval(input);

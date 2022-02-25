@@ -75,8 +75,8 @@ impl ASTNode {
                 kind: NodeKind::Identifier,
                 value: ASTValue::String("()".to_string()),
                 line: 0,
-                col: 0
-            })
+                col: 0,
+            });
         }
 
         let next = input.peek();

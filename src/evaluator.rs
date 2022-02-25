@@ -33,7 +33,7 @@ fn dict_of_params(
 
 pub struct Evaluator {
     symbols: SymbolTable,
-    backtrace: Backtrace
+    backtrace: Backtrace,
 }
 
 impl Evaluator {
@@ -46,7 +46,7 @@ impl Evaluator {
     pub fn new() -> Evaluator {
         let mut ret = Evaluator {
             symbols: SymbolTable::empty(),
-            backtrace: Backtrace::empty()
+            backtrace: Backtrace::empty(),
         };
 
         // Rust-native parts of the standard library
@@ -86,16 +86,18 @@ impl Evaluator {
         assert_eq!(children[0].string(), "lambda");
         assert_eq!(children[1].kind(), NodeKind::OptionalParameterList);
         let parameter_list = children[1].children()[0].children();
-        let function_body = FunctionBody::Lambda(|_node, outer_symbols, outer_backtrace, parameter_list, params| {
-            let body = parameter_list.get(parameter_list.len() - 1).unwrap();
-            let mut symbols = outer_symbols.clone();
-            symbols.extend(dict_of_params(&parameter_list, &params));
-            let mut e = Evaluator {
-                symbols,
-                backtrace: outer_backtrace
-            };
-            e.eval_node(body)
-        });
+        let function_body = FunctionBody::Lambda(
+            |_node, outer_symbols, outer_backtrace, parameter_list, params| {
+                let body = parameter_list.get(parameter_list.len() - 1).unwrap();
+                let mut symbols = outer_symbols.clone();
+                symbols.extend(dict_of_params(&parameter_list, &params));
+                let mut e = Evaluator {
+                    symbols,
+                    backtrace: outer_backtrace,
+                };
+                e.eval_node(body)
+            },
+        );
         let function = Function {
             parameter_list: parameter_list.clone(),
             function: function_body,
@@ -166,14 +168,14 @@ impl Evaluator {
                 Err(e) => return Err(e),
             };
             if condition {
-                return self.eval_node(parameters.get(i+1).unwrap());
+                return self.eval_node(parameters.get(i + 1).unwrap());
             }
             i += 2;
         }
         Err(EvaluationError {
             message: "`cond` expression did not return a value (no condition evaluated to true)"
                 .to_string(),
-                backtrace: self.backtrace.clone()
+            backtrace: self.backtrace.clone(),
         })
     }
 
@@ -224,12 +226,12 @@ impl Evaluator {
             Ok(result) => result,
             Err(e) => return Err(e),
         };
-        self.backtrace.push((first_child.string().clone(), node.line(), node.col()));
+        self.backtrace
+            .push((first_child.string().clone(), node.line(), node.col()));
         let result = match function_node {
-            Structure::Function(callable) => callable.call(node,
-                &self.symbols,
-                &self.backtrace,
-                params),
+            Structure::Function(callable) => {
+                callable.call(node, &self.symbols, &self.backtrace, params)
+            }
             _ => panic!(),
         };
         self.backtrace.pop();
@@ -247,12 +249,10 @@ impl Evaluator {
         let result = self.symbols.get(str);
         match result {
             Some(structure) => Ok(structure.clone()),
-            None => {
-                Err(EvaluationError {
-                    message: format!("undeclared identifier: {}", str),
-                    backtrace: self.backtrace.clone()
-                })
-            },
+            None => Err(EvaluationError {
+                message: format!("undeclared identifier: {}", str),
+                backtrace: self.backtrace.clone(),
+            }),
         }
     }
 
@@ -363,19 +363,28 @@ mod tests {
     #[test]
     fn test_cond_expressions() {
         let mut e = Evaluator::new();
-        assert_eq!(e.eval("(cond
+        assert_eq!(
+            e.eval(
+                "(cond
             false 1
             true 2
             false 3
-            true 4)"), Ok(Structure::Integer(2)));
-        
+            true 4)"
+            ),
+            Ok(Structure::Integer(2))
+        );
 
         // make sure the false or redundant paths
         // don't get executed, by using an undeclared identifier
-        assert_eq!(e.eval("(cond
+        assert_eq!(
+            e.eval(
+                "(cond
             false missing1
             false missing2
             true 3
-            true missing4)"), Ok(Structure::Integer(3)));
+            true missing4)"
+            ),
+            Ok(Structure::Integer(3))
+        );
     }
 }
