@@ -7,10 +7,8 @@ use crate::{
 
 fn format_backtrace(backtrace: &Backtrace) -> String {
     let mut backtrace_str = String::new();
-    let mut i = 0;
-    for (function_name, line, _col) in backtrace.iter().rev() {
+    for (i, (function_name, line, _col)) in backtrace.iter().rev().enumerate() {
         backtrace_str += format!("frame #{}: {} at <stdin>:{}\n", i, function_name, line).as_ref();
-        i += 1;
     }
     backtrace_str
 }
