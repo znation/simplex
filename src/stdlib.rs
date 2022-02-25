@@ -232,10 +232,10 @@ fn dict(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Evaluati
     let size = params.len();
 
     if size % 2 != 0 {
-        return Err(EvaluationError {
-            message: "expected an even number of parameters to `dict`".to_string(),
+        return Err(EvaluationError::RuntimeError(
+            "expected an even number of parameters to `dict`".to_string(),
             backtrace,
-        });
+        ));
     }
 
     let mut result = HashMap::new();
@@ -254,10 +254,10 @@ fn dict(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Evaluati
 
 fn dict_get(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
     if params.len() != 2 {
-        return Err(EvaluationError {
-            message: "expected 2 parameters to `dict.get`".to_string(),
+        return Err(EvaluationError::RuntimeError(
+            "expected 2 parameters to `dict.get`".to_string(),
             backtrace,
-        });
+        ));
     }
     let key = match params[0].string(backtrace.clone(), Some(&node)) {
         Ok(s) => s,
@@ -266,19 +266,19 @@ fn dict_get(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Eval
     let dict = params[1].dict();
     match dict.get(&key) {
         Some(s) => Ok(s.clone()),
-        None => Err(EvaluationError {
-            message: format!("could not find key {} in dict", key),
+        None => Err(EvaluationError::RuntimeError(
+            format!("could not find key {} in dict", key),
             backtrace,
-        }),
+        )),
     }
 }
 
 fn dict_set(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
     if params.len() != 3 {
-        return Err(EvaluationError {
-            message: "expected 3 parameters to `dict.set`".to_string(),
+        return Err(EvaluationError::RuntimeError(
+            "expected 3 parameters to `dict.set`".to_string(),
             backtrace,
-        });
+        ));
     }
     let key = match params[0].string(backtrace, Some(&node)) {
         Ok(s) => s,
@@ -292,16 +292,16 @@ fn dict_set(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Eval
 
 fn string(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
     if params.is_empty() {
-        return Err(EvaluationError {
-            message: "not enough parameters to `string`".to_string(),
+        return Err(EvaluationError::RuntimeError(
+            "not enough parameters to `string`".to_string(),
             backtrace,
-        });
+        ));
     }
     if params.len() > 1 {
-        return Err(EvaluationError {
-            message: "too many parameters to `string`".to_string(),
+        return Err(EvaluationError::RuntimeError(
+            "too many parameters to `string`".to_string(),
             backtrace,
-        });
+        ));
     }
     let param = params[0].clone();
     match param.string(backtrace, Some(&node)) {
@@ -325,20 +325,20 @@ fn read_bytes(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> E
     } else if params.len() == 1 {
         params[1].integer() as usize
     } else {
-        return Err(EvaluationError {
-            message: "too many parameters to `read_bytes`".to_string(),
+        return Err(EvaluationError::RuntimeError(
+            "too many parameters to `read_bytes`".to_string(),
             backtrace,
-        });
+        ));
     };
     let mut bytes: Vec<Structure> = Vec::new();
     for byte in stdin().bytes().take(max_count) {
         match byte {
             Ok(b) => bytes.push(Structure::Byte(b)),
             Err(e) => {
-                return Err(EvaluationError {
-                    message: format!("{}", e),
+                return Err(EvaluationError::RuntimeError(
+                    format!("{}", e),
                     backtrace,
-                })
+                ))
             }
         }
     }
@@ -348,20 +348,20 @@ fn read_bytes(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> E
 
 fn read_line(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
     if !params.is_empty() {
-        return Err(EvaluationError {
-            message: "too many parameters to `read_line`".to_string(),
+        return Err(EvaluationError::RuntimeError(
+            "too many parameters to `read_line`".to_string(),
             backtrace,
-        });
+        ));
     }
     let mut value = String::new();
     let result = stdin().read_line(&mut value);
     match result {
         Ok(_) => (),
         Err(e) => {
-            return Err(EvaluationError {
-                message: format!("{}", e),
+            return Err(EvaluationError::RuntimeError(
+                format!("{}", e),
                 backtrace,
-            })
+            ))
         }
     }
     Ok(Structure::from_string(&value))

@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use crate::astinput::ASTInput;
-use crate::errors::ParseError;
+use crate::errors::EvaluationError;
 
 #[derive(Clone, Debug, PartialEq)]
 enum ASTValue {
@@ -38,7 +38,7 @@ impl ASTNode {
         }
     }
 
-    pub fn parse_program(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
+    pub fn parse_program(input: &mut ASTInput) -> Result<ASTNode, EvaluationError> {
         let kind = NodeKind::Program;
         let line = input.line();
         let col = input.col();
@@ -61,7 +61,7 @@ impl ASTNode {
         })
     }
 
-    pub fn parse_expression(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
+    pub fn parse_expression(input: &mut ASTInput) -> Result<ASTNode, EvaluationError> {
         let kind = NodeKind::Expression;
 
         match ASTNode::parse_optional_whitespace(input) {
@@ -119,7 +119,7 @@ impl ASTNode {
         }
         ret
     }
-    pub fn parse_optional_parameter_list(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
+    pub fn parse_optional_parameter_list(input: &mut ASTInput) -> Result<ASTNode, EvaluationError> {
         let kind = NodeKind::OptionalParameterList;
         let value = if input.peek() != ')' {
             let mut parameter_list = ASTNode {
@@ -143,7 +143,7 @@ impl ASTNode {
             col: input.col(),
         })
     }
-    pub fn parse_parameter_list(&mut self, input: &mut ASTInput) -> Result<(), ParseError> {
+    pub fn parse_parameter_list(&mut self, input: &mut ASTInput) -> Result<(), EvaluationError> {
         let mut new_children = Vec::new();
         match ASTNode::parse_expression(input) {
             Ok(v) => new_children.push(v),
@@ -160,7 +160,7 @@ impl ASTNode {
         }
 
         if input.size() == 0 {
-            return Err(ParseError::from(
+            return Err(EvaluationError::parse_error(
                 NodeKind::ParameterList,
                 "end of expression ')'",
                 "EOF",
@@ -175,12 +175,12 @@ impl ASTNode {
         // more parameters left to parse
         self.parse_parameter_list(input)
     }
-    pub fn parse_literal(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
+    pub fn parse_literal(input: &mut ASTInput) -> Result<ASTNode, EvaluationError> {
         let kind = NodeKind::Literal;
         let line = input.line();
         let col = input.col();
         if input.size() == 0 {
-            return Err(ParseError::from(
+            return Err(EvaluationError::parse_error(
                 kind,
                 "any valid literal",
                 "EOF",
@@ -205,7 +205,7 @@ impl ASTNode {
             col,
         })
     }
-    pub fn parse_number(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
+    pub fn parse_number(input: &mut ASTInput) -> Result<ASTNode, EvaluationError> {
         let mut kind = NodeKind::Integer;
 
         // read digits until whitespace or decimal
@@ -223,7 +223,7 @@ impl ASTNode {
                     break;
                 }
                 if !next.is_digit(10) {
-                    return Err(ParseError::from(
+                    return Err(EvaluationError::parse_error(
                         kind,
                         "digits 0 through 9",
                         next.to_string(),
@@ -265,7 +265,7 @@ impl ASTNode {
             }
         }
     }
-    pub fn parse_optional_whitespace(input: &mut ASTInput) -> Result<(), ParseError> {
+    pub fn parse_optional_whitespace(input: &mut ASTInput) -> Result<(), EvaluationError> {
         if input.size() == 0 {
             return Ok(());
         }
@@ -274,14 +274,14 @@ impl ASTNode {
         }
         ASTNode::parse_whitespace(input)
     }
-    pub fn parse_whitespace(input: &mut ASTInput) -> Result<(), ParseError> {
+    pub fn parse_whitespace(input: &mut ASTInput) -> Result<(), EvaluationError> {
         let mut found_whitespace = false;
         while input.size() != 0 {
             let next = input.peek();
             if is_whitespace(next) {
                 found_whitespace = true;
             } else if !found_whitespace {
-                return Err(ParseError::from(
+                return Err(EvaluationError::parse_error(
                     NodeKind::Whitespace,
                     "Any of: ' ', \\r, \\n, \\t",
                     next.to_string(),
@@ -295,12 +295,12 @@ impl ASTNode {
         }
         Ok(())
     }
-    pub fn parse_identifier(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
+    pub fn parse_identifier(input: &mut ASTInput) -> Result<ASTNode, EvaluationError> {
         let kind = NodeKind::Identifier;
         let line = input.line();
         let col = input.col();
         if input.size() == 0 {
-            return Err(ParseError::from(
+            return Err(EvaluationError::parse_error(
                 kind,
                 "any valid identifier",
                 "EOF",
@@ -310,7 +310,7 @@ impl ASTNode {
         }
         let mut next = input.peek();
         if next == '\'' {
-            return Err(ParseError::from(
+            return Err(EvaluationError::parse_error(
                 kind,
                 "non-whitespace character other than '\\'', '(' and ')'",
                 next.to_string(),
@@ -325,7 +325,7 @@ impl ASTNode {
                 break;
             }
             if next == '(' {
-                return Err(ParseError::from(
+                return Err(EvaluationError::parse_error(
                     kind,
                     "non-whitespace character other than '('",
                     next.to_string(),
@@ -350,7 +350,7 @@ impl ASTNode {
         })
     }
 
-    pub fn parse_string(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
+    pub fn parse_string(input: &mut ASTInput) -> Result<ASTNode, EvaluationError> {
         let kind = NodeKind::String;
         let line = input.line();
         let col = input.col();
@@ -369,7 +369,7 @@ impl ASTNode {
             if next == '\\' {
                 // escape char
                 if input.size() < 2 {
-                    return Err(ParseError::from(
+                    return Err(EvaluationError::parse_error(
                         kind,
                         "any character followed by escape sequence (\\)",
                         "EOF",
@@ -385,7 +385,7 @@ impl ASTNode {
             input.next();
         }
         if !found_end_of_string {
-            return Err(ParseError::from(
+            return Err(EvaluationError::parse_error(
                 kind,
                 "end of string marker (')",
                 "EOF",
@@ -450,12 +450,12 @@ impl ASTNode {
         kind: NodeKind,
         input: &mut ASTInput,
         token: S,
-    ) -> Result<(), ParseError> {
+    ) -> Result<(), EvaluationError> {
         let token_str = token.as_ref();
         let token_size = token_str.chars().count();
         if token_size > input.size() {
             let remaining = input.get();
-            return Err(ParseError::from(
+            return Err(EvaluationError::parse_error(
                 kind,
                 token,
                 remaining,
@@ -465,7 +465,7 @@ impl ASTNode {
         }
         let should_be_token = &input.get()[0..token_size];
         if should_be_token != token_str {
-            return Err(ParseError::from(
+            return Err(EvaluationError::parse_error(
                 kind,
                 token,
                 should_be_token,

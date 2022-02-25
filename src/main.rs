@@ -48,10 +48,10 @@ fn main() -> Result<(), EvaluationError> {
             match stdout().flush() {
                 Ok(_) => (),
                 Err(e) => {
-                    return Err(EvaluationError {
-                        message: format!("{}", e),
-                        backtrace: Backtrace::empty(),
-                    })
+                    return Err(EvaluationError::RuntimeError(
+                        format!("{}", e),
+                        Backtrace::empty(),
+                    ))
                 }
             }
             let mut input = String::new();
@@ -62,16 +62,16 @@ fn main() -> Result<(), EvaluationError> {
                     }
                 }
                 Err(e) => {
-                    return Err(EvaluationError {
-                        message: format!("{}", e),
-                        backtrace: Backtrace::empty(),
-                    })
+                    return Err(EvaluationError::RuntimeError(
+                        format!("{}", e),
+                        Backtrace::empty(),
+                    ))
                 }
             }
             let result = evaluator.eval(input);
             match result {
                 Ok(value) => println!("{}", value),
-                Err(e) => return Err(e),
+                Err(e) => println!("{}", e),
             }
             if eof {
                 break;
@@ -83,10 +83,10 @@ fn main() -> Result<(), EvaluationError> {
         let mut input = String::new();
         let result = io::stdin().read_to_string(&mut input);
         if let Err(e) = result {
-            return Err(EvaluationError {
-                message: e.to_string(),
-                backtrace: Backtrace::empty(),
-            });
+            return Err(EvaluationError::RuntimeError(
+                e.to_string(),
+                Backtrace::empty(),
+            ));
         }
         let evaluation_result = evaluator.eval(input);
         match evaluation_result {

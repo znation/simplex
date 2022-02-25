@@ -73,7 +73,7 @@ impl Evaluator {
     pub fn eval<S: AsRef<str>>(&mut self, str: S) -> EvaluationResult {
         let node = match Parser::parse(str) {
             Ok(n) => n,
-            Err(e) => return Err(EvaluationError::from_parse_error(e)),
+            Err(e) => return Err(e),
         };
         self.eval_node(&node)
     }
@@ -155,10 +155,10 @@ impl Evaluator {
         assert_eq!(children[1].kind(), NodeKind::OptionalParameterList);
         let parameters = children[1].children()[0].children();
         if parameters.len() % 2 != 0 {
-            return Err(EvaluationError {
-                message: "cond must take an even number of parameters (pairs of condition and expression)".to_string(),
-                backtrace: self.backtrace.clone()
-             });
+            return Err(EvaluationError::RuntimeError(
+                "cond must take an even number of parameters (pairs of condition and expression)".to_string(),
+                self.backtrace.clone()
+            ));
         }
         let mut i = 0;
         while i < parameters.len() {
@@ -172,11 +172,11 @@ impl Evaluator {
             }
             i += 2;
         }
-        Err(EvaluationError {
-            message: "`cond` expression did not return a value (no condition evaluated to true)"
+        Err(EvaluationError::RuntimeError(
+            "`cond` expression did not return a value (no condition evaluated to true)"
                 .to_string(),
-            backtrace: self.backtrace.clone(),
-        })
+            self.backtrace.clone(),
+        ))
     }
 
     pub fn eval_parameters(&mut self, node: &ASTNode) -> Result<Vec<Structure>, EvaluationError> {
@@ -249,10 +249,10 @@ impl Evaluator {
         let result = self.symbols.get(str);
         match result {
             Some(structure) => Ok(structure.clone()),
-            None => Err(EvaluationError {
-                message: format!("undeclared identifier: {}", str),
-                backtrace: self.backtrace.clone(),
-            }),
+            None => Err(EvaluationError::RuntimeError(
+                format!("undeclared identifier: {}", str),
+                self.backtrace.clone(),
+            )),
         }
     }
 
