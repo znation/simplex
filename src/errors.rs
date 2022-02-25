@@ -7,7 +7,7 @@ use crate::{
 
 fn format_backtrace(backtrace: &Backtrace) -> String {
     let mut backtrace_str = String::new();
-    let mut i= 0;
+    let mut i = 0;
     for (function_name, line, _col) in backtrace.iter().rev() {
         backtrace_str += format!("frame #{}: {} at <stdin>:{}\n", i, function_name, line).as_ref();
         i += 1;
@@ -36,7 +36,8 @@ impl EvaluationError {
                 expected,
                 found
             ),
-            backtrace)
+            backtrace,
+        )
     }
     pub fn parse_error<S1: AsRef<str>, S2: AsRef<str>>(
         kind: NodeKind,
@@ -45,16 +46,14 @@ impl EvaluationError {
         line: i64,
         col: i64,
     ) -> EvaluationError {
-        EvaluationError::ParseError(
-            format!(
-                "{}|{}: parse error while attempting to parse {:?}: expected {}, found {}",
-                line,
-                col,
-                kind,
-                expected.as_ref(),
-                actual.as_ref()
-            )
-        )
+        EvaluationError::ParseError(format!(
+            "{}|{}: parse error while attempting to parse {:?}: expected {}, found {}",
+            line,
+            col,
+            kind,
+            expected.as_ref(),
+            actual.as_ref()
+        ))
     }
 }
 
@@ -63,8 +62,13 @@ impl Display for EvaluationError {
         match self {
             EvaluationError::ParseError(msg) => write!(f, "{}", msg),
             EvaluationError::RuntimeError(msg, backtrace) => {
-                write!(f, "\nbacktrace: \n\n{}\nexception message:\n\n{}", format_backtrace(backtrace), msg)
-            },
+                write!(
+                    f,
+                    "\nbacktrace: \n\n{}\nexception message:\n\n{}",
+                    format_backtrace(backtrace),
+                    msg
+                )
+            }
         }
     }
 }

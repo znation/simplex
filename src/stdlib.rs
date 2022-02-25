@@ -334,12 +334,7 @@ fn read_bytes(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> E
     for byte in stdin().bytes().take(max_count) {
         match byte {
             Ok(b) => bytes.push(Structure::Byte(b)),
-            Err(e) => {
-                return Err(EvaluationError::RuntimeError(
-                    format!("{}", e),
-                    backtrace,
-                ))
-            }
+            Err(e) => return Err(EvaluationError::RuntimeError(format!("{}", e), backtrace)),
         }
     }
     let ret = list_impl(bytes, 0);
@@ -357,12 +352,7 @@ fn read_line(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Ev
     let result = stdin().read_line(&mut value);
     match result {
         Ok(_) => (),
-        Err(e) => {
-            return Err(EvaluationError::RuntimeError(
-                format!("{}", e),
-                backtrace,
-            ))
-        }
+        Err(e) => return Err(EvaluationError::RuntimeError(format!("{}", e), backtrace)),
     }
     Ok(Structure::from_string(&value))
 }

@@ -156,8 +156,9 @@ impl Evaluator {
         let parameters = children[1].children()[0].children();
         if parameters.len() % 2 != 0 {
             return Err(EvaluationError::RuntimeError(
-                "cond must take an even number of parameters (pairs of condition and expression)".to_string(),
-                self.backtrace.clone()
+                "cond must take an even number of parameters (pairs of condition and expression)"
+                    .to_string(),
+                self.backtrace.clone(),
             ));
         }
         let mut i = 0;
@@ -173,8 +174,7 @@ impl Evaluator {
             i += 2;
         }
         Err(EvaluationError::RuntimeError(
-            "`cond` expression did not return a value (no condition evaluated to true)"
-                .to_string(),
+            "`cond` expression did not return a value (no condition evaluated to true)".to_string(),
             self.backtrace.clone(),
         ))
     }
