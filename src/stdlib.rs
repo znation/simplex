@@ -234,7 +234,7 @@ fn dict(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Evaluati
     if size % 2 != 0 {
         return Err(EvaluationError {
             message: "expected an even number of parameters to `dict`".to_string(),
-            backtrace: backtrace.clone(),
+            backtrace,
         });
     }
 
@@ -256,7 +256,7 @@ fn dict_get(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Eval
     if params.len() != 2 {
         return Err(EvaluationError {
             message: "expected 2 parameters to `dict.get`".to_string(),
-            backtrace: backtrace,
+            backtrace,
         });
     }
     let key = match params[0].string(backtrace.clone(), Some(&node)) {
@@ -268,7 +268,7 @@ fn dict_get(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Eval
         Some(s) => Ok(s.clone()),
         None => Err(EvaluationError {
             message: format!("could not find key {} in dict", key),
-            backtrace: backtrace,
+            backtrace,
         }),
     }
 }
@@ -277,7 +277,7 @@ fn dict_set(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Eval
     if params.len() != 3 {
         return Err(EvaluationError {
             message: "expected 3 parameters to `dict.set`".to_string(),
-            backtrace: backtrace,
+            backtrace,
         });
     }
     let key = match params[0].string(backtrace, Some(&node)) {
@@ -294,13 +294,13 @@ fn string(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Evalua
     if params.is_empty() {
         return Err(EvaluationError {
             message: "not enough parameters to `string`".to_string(),
-            backtrace: backtrace,
+            backtrace,
         });
     }
     if params.len() > 1 {
         return Err(EvaluationError {
             message: "too many parameters to `string`".to_string(),
-            backtrace: backtrace,
+            backtrace,
         });
     }
     let param = params[0].clone();
@@ -320,17 +320,15 @@ fn print(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> Evalu
 const MAX_READ_COUNT: usize = 1073741824;
 
 fn read_bytes(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
-    let max_count = if params.len() == 0 {
+    let max_count = if params.is_empty() {
         MAX_READ_COUNT
+    } else if params.len() == 1 {
+        params[1].integer() as usize
     } else {
-        if params.len() == 1 {
-            params[1].integer() as usize
-        } else {
-            return Err(EvaluationError {
-                message: "too many parameters to `read_bytes`".to_string(),
-                backtrace: backtrace,
-            });
-        }
+        return Err(EvaluationError {
+            message: "too many parameters to `read_bytes`".to_string(),
+            backtrace,
+        });
     };
     let mut bytes: Vec<Structure> = Vec::new();
     for byte in stdin().bytes().take(max_count) {
@@ -339,7 +337,7 @@ fn read_bytes(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> E
             Err(e) => {
                 return Err(EvaluationError {
                     message: format!("{}", e),
-                    backtrace: backtrace,
+                    backtrace,
                 })
             }
         }
@@ -349,10 +347,10 @@ fn read_bytes(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> E
 }
 
 fn read_line(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
-    if params.len() != 0 {
+    if !params.is_empty() {
         return Err(EvaluationError {
             message: "too many parameters to `read_line`".to_string(),
-            backtrace: backtrace,
+            backtrace,
         });
     }
     let mut value = String::new();
@@ -362,7 +360,7 @@ fn read_line(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Ev
         Err(e) => {
             return Err(EvaluationError {
                 message: format!("{}", e),
-                backtrace: backtrace,
+                backtrace,
             })
         }
     }

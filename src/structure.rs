@@ -109,7 +109,7 @@ impl Structure {
         Structure::Invalid
     }
 
-    pub fn from_string(s: &String) -> Structure {
+    pub fn from_string(s: &str) -> Structure {
         // create cons from string
         let len = s.len();
         if len == 0 {
@@ -195,25 +195,23 @@ impl Structure {
         let ret = if car.kind() == StructureKind::Nil {
             assert_eq!(cdr.kind(), StructureKind::Nil);
             "".to_string()
-        } else {
-            if car.kind() == StructureKind::Char {
-                assert_eq!(car.kind(), StructureKind::Char);
-                if cdr.kind() == StructureKind::Nil {
-                    car.char().to_string()
-                } else {
-                    match cdr.string(backtrace, Some(node)) {
-                        Ok(s) => car.char().to_string() + &s,
-                        Err(e) => return Err(e),
-                    }
-                }
+        } else if car.kind() == StructureKind::Char {
+            assert_eq!(car.kind(), StructureKind::Char);
+            if cdr.kind() == StructureKind::Nil {
+                car.char().to_string()
             } else {
-                return Err(EvaluationError::type_mismatch(
-                    &node,
-                    backtrace,
-                    StructureKind::Char,
-                    car.kind(),
-                ));
+                match cdr.string(backtrace, Some(node)) {
+                    Ok(s) => car.char().to_string() + &s,
+                    Err(e) => return Err(e),
+                }
             }
+        } else {
+            return Err(EvaluationError::type_mismatch(
+                node,
+                backtrace,
+                StructureKind::Char,
+                car.kind(),
+            ));
         };
         Ok(ret)
     }

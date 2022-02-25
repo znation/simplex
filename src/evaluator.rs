@@ -54,7 +54,7 @@ impl Evaluator {
 
         // Simplex stdlib (written in simplex)
         let simplex_lib = include_str!("stdlib.simplex");
-        let result = ret.eval(simplex_lib.to_string());
+        let result = ret.eval(simplex_lib);
         assert!(result.is_ok());
 
         ret
@@ -88,8 +88,8 @@ impl Evaluator {
         let parameter_list = children[1].children()[0].children();
         let function_body = FunctionBody::Lambda(
             |_node, outer_symbols, outer_backtrace, parameter_list, params| {
-                let body = parameter_list.get(parameter_list.len() - 1).unwrap();
-                let mut symbols = outer_symbols.clone();
+                let body = parameter_list.last().unwrap();
+                let mut symbols = outer_symbols;
                 symbols.extend(dict_of_params(&parameter_list, &params));
                 let mut e = Evaluator {
                     symbols,
