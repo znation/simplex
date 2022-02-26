@@ -1,4 +1,5 @@
-use std::{error::Error, fmt::Display};
+use crate::structure::Empty;
+use std::{error::Error, fmt::Display, io};
 
 use crate::{
     astnode::{ASTNode, NodeKind},
@@ -68,6 +69,12 @@ impl Display for EvaluationError {
                 )
             }
         }
+    }
+}
+
+impl From<io::Error> for EvaluationError {
+    fn from(e: io::Error) -> Self {
+        return EvaluationError::RuntimeError(format!("{}", e), Backtrace::empty());
     }
 }
 

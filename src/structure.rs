@@ -200,10 +200,8 @@ impl Structure {
             if cdr.kind() == StructureKind::Nil {
                 car.char().to_string()
             } else {
-                match cdr.string(backtrace, Some(node)) {
-                    Ok(s) => car.char().to_string() + &s,
-                    Err(e) => return Err(e),
-                }
+                let s = cdr.string(backtrace, Some(node))?;
+                car.char().to_string() + &s
             }
         } else {
             return Err(EvaluationError::type_mismatch(

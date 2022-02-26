@@ -43,15 +43,11 @@ impl ASTNode {
         let line = input.line();
         let col = input.col();
         let mut children = Vec::new();
-        match ASTNode::parse_expression(input) {
-            Ok(v) => children.push(v),
-            Err(e) => return Err(e),
-        }
+        let parsed_expression = ASTNode::parse_expression(input)?;
+        children.push(parsed_expression);
         if input.size() > 0 {
-            match ASTNode::parse_program(input) {
-                Ok(v) => children.push(v),
-                Err(e) => return Err(e),
-            }
+            let remaining_program = ASTNode::parse_program(input)?;
+            children.push(remaining_program);
         }
         Ok(ASTNode {
             kind,
@@ -64,10 +60,7 @@ impl ASTNode {
     pub fn parse_expression(input: &mut ASTInput) -> Result<ASTNode, EvaluationError> {
         let kind = NodeKind::Expression;
 
-        match ASTNode::parse_optional_whitespace(input) {
-            Ok(_) => (),
-            Err(e) => return Err(e),
-        }
+        ASTNode::parse_optional_whitespace(input)?;
 
         if input.size() == 0 {
             // for ergonomics, interpret empty string as ()
@@ -82,26 +75,26 @@ impl ASTNode {
         let next = input.peek();
         let ret = if next == '(' {
             let mut children = Vec::new();
-            match ASTNode::expect(kind, input, "(") {
-                Ok(_) => (),
-                Err(e) => return Err(e),
-            }
-            match ASTNode::parse_expression(input) {
-                Ok(v) => children.push(v),
-                Err(e) => return Err(e),
-            }
-            match ASTNode::parse_optional_parameter_list(input) {
-                Ok(v) => children.push(v),
-                Err(e) => return Err(e),
-            }
-            match ASTNode::parse_optional_whitespace(input) {
-                Ok(_) => (),
-                Err(e) => return Err(e),
-            }
-            match ASTNode::expect(kind, input, ")") {
-                Ok(_) => (),
-                Err(e) => return Err(e),
-            }
+
+            // all expressions start with an open paren
+            ASTNode::expect(kind, input, "(")?;
+
+            // all expressions are function invocations with (optional) parameters.
+            // the function is itself an expression, so this definition is recursive,
+            // as is this function call.
+            let function_expression = ASTNode::parse_expression(input)?;
+            children.push(function_expression);
+
+            // parse 0 or more parameters
+            let optional_parameters = ASTNode::parse_optional_parameter_list(input)?;
+            children.push(optional_parameters);
+
+            // skip over any remaining whitespace before a close paren
+            ASTNode::parse_optional_whitespace(input)?;
+
+            // finally, match the close paren
+            ASTNode::expect(kind, input, ")")?;
+
             Ok(ASTNode {
                 kind,
                 value: ASTValue::Children(children),
@@ -113,10 +106,7 @@ impl ASTNode {
         } else {
             ASTNode::parse_identifier(input)
         };
-        match ASTNode::parse_optional_whitespace(input) {
-            Ok(_) => (),
-            Err(e) => return Err(e),
-        }
+        ASTNode::parse_optional_whitespace(input)?;
         ret
     }
     pub fn parse_optional_parameter_list(input: &mut ASTInput) -> Result<ASTNode, EvaluationError> {
@@ -128,10 +118,7 @@ impl ASTNode {
                 line: input.line(),
                 col: input.col(),
             };
-            match parameter_list.parse_parameter_list(input) {
-                Ok(_) => (),
-                Err(e) => return Err(e),
-            }
+            parameter_list.parse_parameter_list(input)?;
             vec![parameter_list]
         } else {
             Vec::new()
@@ -145,19 +132,14 @@ impl ASTNode {
     }
     pub fn parse_parameter_list(&mut self, input: &mut ASTInput) -> Result<(), EvaluationError> {
         let mut new_children = Vec::new();
-        match ASTNode::parse_expression(input) {
-            Ok(v) => new_children.push(v),
-            Err(e) => return Err(e),
-        }
+        let expr = ASTNode::parse_expression(input)?;
+        new_children.push(expr);
         match &mut self.value {
             ASTValue::Children(children) => children.extend(new_children),
             _ => panic!(),
         }
 
-        match ASTNode::parse_optional_whitespace(input) {
-            Ok(_) => (),
-            Err(e) => return Err(e),
-        }
+        ASTNode::parse_optional_whitespace(input)?;
 
         if input.size() == 0 {
             return Err(EvaluationError::parse_error(
@@ -193,11 +175,8 @@ impl ASTNode {
             ASTNode::parse_string(input)
         } else {
             ASTNode::parse_number(input)
-        };
-        let value = match result {
-            Err(e) => return Err(e),
-            _ => vec![result.unwrap()],
-        };
+        }?;
+        let value = vec![result];
         Ok(ASTNode {
             kind,
             value: ASTValue::Children(value),
@@ -356,10 +335,7 @@ impl ASTNode {
         let col = input.col();
         let mut ss = String::new();
         let mut found_end_of_string = false;
-        match ASTNode::expect(kind, input, "'") {
-            Ok(_) => (),
-            Err(e) => return Err(e),
-        }
+        ASTNode::expect(kind, input, "'")?;
         while input.size() != 0 {
             let mut next = input.peek();
             if next == '\'' {
@@ -394,10 +370,7 @@ impl ASTNode {
             ));
         }
 
-        match ASTNode::expect(kind, input, "'") {
-            Ok(_) => (),
-            Err(e) => return Err(e),
-        }
+        ASTNode::expect(kind, input, "'")?;
         Ok(ASTNode {
             kind,
             value: ASTValue::String(ss),

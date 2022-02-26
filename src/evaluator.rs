@@ -71,10 +71,7 @@ impl Evaluator {
     }
 
     pub fn eval<S: AsRef<str>>(&mut self, str: S) -> EvaluationResult {
-        let node = match Parser::parse(str) {
-            Ok(n) => n,
-            Err(e) => return Err(e),
-        };
+        let node = Parser::parse(str)?;
         self.eval_node(&node)
     }
 
@@ -119,10 +116,7 @@ impl Evaluator {
         assert_eq!(id_with_value.len(), 2);
         let id = id_with_value.get(0).unwrap();
         assert_eq!(id.kind(), NodeKind::Identifier);
-        let new_symbol = match self.eval_node(id_with_value.get(1).unwrap()) {
-            Ok(result) => result,
-            Err(e) => return Err(e),
-        };
+        let new_symbol = self.eval_node(id_with_value.get(1).unwrap())?;
         self.symbols.insert(id.string().clone(), new_symbol);
         Ok(Structure::Boolean(true))
     }
@@ -136,10 +130,7 @@ impl Evaluator {
         let parameters = children[1].children()[0].children();
         assert_eq!(parameters.len(), 3);
         let result = self.eval_node(parameters.get(0).unwrap());
-        let condition = match result {
-            Ok(c) => c.boolean(),
-            Err(e) => return Err(e),
-        };
+        let condition = result?.boolean();
         if condition {
             self.eval_node(parameters.get(1).unwrap())
         } else {
@@ -164,10 +155,7 @@ impl Evaluator {
         let mut i = 0;
         while i < parameters.len() {
             let result = self.eval_node(parameters.get(i).unwrap());
-            let condition = match result {
-                Ok(s) => s.boolean(),
-                Err(e) => return Err(e),
-            };
+            let condition = result?.boolean();
             if condition {
                 return self.eval_node(parameters.get(i + 1).unwrap());
             }
@@ -192,11 +180,8 @@ impl Evaluator {
         assert_eq!(node.kind(), NodeKind::ParameterList);
         let mut ret = Vec::new();
         for child in node.children() {
-            let result = self.eval_node(child);
-            match result {
-                Ok(s) => ret.push(s),
-                Err(e) => return Err(e),
-            }
+            let result = self.eval_node(child)?;
+            ret.push(result);
         }
         Ok(ret)
     }
@@ -218,14 +203,8 @@ impl Evaluator {
             }
         }
 
-        let function_node = match self.eval_node(first_child) {
-            Ok(result) => result,
-            Err(e) => return Err(e),
-        };
-        let params = match self.eval_parameters(children.get(1).unwrap()) {
-            Ok(result) => result,
-            Err(e) => return Err(e),
-        };
+        let function_node = self.eval_node(first_child)?;
+        let params = self.eval_parameters(children.get(1).unwrap())?;
         self.backtrace
             .push((first_child.string().clone(), node.line(), node.col()));
         let result = match function_node {

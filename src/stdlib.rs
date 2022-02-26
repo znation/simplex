@@ -241,10 +241,7 @@ fn dict(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Evaluati
     let mut result = HashMap::new();
     let mut i = 0;
     while i < size {
-        let key = match params[i].string(backtrace.clone(), Some(&node)) {
-            Ok(s) => s,
-            Err(e) => return Err(e),
-        };
+        let key = params[i].string(backtrace.clone(), Some(&node))?;
         let value = params[i + 1].clone();
         result.insert(key, value);
         i += 2;
@@ -259,10 +256,7 @@ fn dict_get(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Eval
             backtrace,
         ));
     }
-    let key = match params[0].string(backtrace.clone(), Some(&node)) {
-        Ok(s) => s,
-        Err(e) => return Err(e),
-    };
+    let key = params[0].string(backtrace.clone(), Some(&node))?;
     let dict = params[1].dict();
     match dict.get(&key) {
         Some(s) => Ok(s.clone()),
@@ -280,10 +274,7 @@ fn dict_set(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Eval
             backtrace,
         ));
     }
-    let key = match params[0].string(backtrace, Some(&node)) {
-        Ok(s) => s,
-        Err(e) => return Err(e),
-    };
+    let key = params[0].string(backtrace, Some(&node))?;
     let value = params[1].clone();
     let mut dict = params[2].dict().clone();
     dict.insert(key, value);
@@ -332,6 +323,7 @@ fn read_bytes(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> E
     };
     let mut bytes: Vec<Structure> = Vec::new();
     for byte in stdin().bytes().take(max_count) {
+        // use match structure with explicit error handling so we can preserve the backtrace
         match byte {
             Ok(b) => bytes.push(Structure::Byte(b)),
             Err(e) => return Err(EvaluationError::RuntimeError(format!("{}", e), backtrace)),
@@ -350,6 +342,7 @@ fn read_line(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Ev
     }
     let mut value = String::new();
     let result = stdin().read_line(&mut value);
+    // use match structure with explicit error handling so we can preserve the backtrace
     match result {
         Ok(_) => (),
         Err(e) => return Err(EvaluationError::RuntimeError(format!("{}", e), backtrace)),
