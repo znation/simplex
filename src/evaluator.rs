@@ -1,5 +1,6 @@
 use crate::structure::Backtrace;
 use crate::structure::Empty;
+use crate::structure::StructureKind;
 use std::collections::HashMap;
 
 use crate::astnode::ASTNode;
@@ -127,7 +128,23 @@ impl Evaluator {
         assert_eq!(children[0].kind(), NodeKind::Identifier);
         assert_eq!(children[0].string(), "if");
         assert_eq!(children[1].kind(), NodeKind::OptionalParameterList);
-        let parameters = children[1].children()[0].children();
+        let children_of_children = children[1].children();
+        if children_of_children.is_empty() {
+            return Err(EvaluationError::RuntimeError(
+                "if expression expects 3 parameters, got 0".to_string(),
+                self.backtrace.clone(),
+            ));
+        }
+        let parameters = children_of_children[0].children();
+        if parameters.len() != 3 {
+            return Err(EvaluationError::RuntimeError(
+                format!(
+                    "if expression expects 3 parameters, got {}",
+                    parameters.len()
+                ),
+                self.backtrace.clone(),
+            ));
+        }
         assert_eq!(parameters.len(), 3);
         let result = self.eval_node(parameters.get(0).unwrap());
         let condition = result?.boolean();
@@ -205,16 +222,21 @@ impl Evaluator {
 
         let function_node = self.eval_node(first_child)?;
         let params = self.eval_parameters(children.get(1).unwrap())?;
-        self.backtrace
-            .push((first_child.string().clone(), node.line(), node.col()));
-        let result = match function_node {
-            Structure::Function(callable) => {
-                callable.call(node, &self.symbols, &self.backtrace, params)
+        match function_node {
+            Structure::Function(ref callable) => {
+                self.backtrace
+                    .push((function_node.to_string(), node.line(), node.col()));
+                let retval = callable.call(node, &self.symbols, &self.backtrace, params);
+                self.backtrace.pop();
+                retval
             }
-            _ => panic!(),
-        };
-        self.backtrace.pop();
-        result
+            _ => Err(EvaluationError::type_mismatch(
+                node,
+                self.backtrace.clone(),
+                StructureKind::Function,
+                function_node.kind(),
+            )),
+        }
     }
 
     pub fn eval_identifier(&self, node: &ASTNode) -> EvaluationResult {

@@ -11,8 +11,10 @@ fuzz_target!(|data: &[u8]| {
         Ok(s) => s,
         _ => return,
     };
-    let _ = match simplex::parser::Parser::parse(s) {
+    let ast = match simplex::parser::Parser::parse(s) {
         Ok(ast) => ast,
         _ => return,
     };
+    let mut e = simplex::evaluator::Evaluator::new();
+    e.eval_node(&ast);
 });

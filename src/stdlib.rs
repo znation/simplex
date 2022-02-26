@@ -62,7 +62,13 @@ fn minus(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> Evalu
     }
 }
 
-fn times(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+fn times(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+    if params.len() < 2 {
+        return Err(EvaluationError::RuntimeError(
+            format!("* expects 2 or more parameters, got {}", params.len()),
+            backtrace,
+        ));
+    }
     assert!(!params.is_empty());
     let mut all_integer = true;
     for param in &params {
@@ -177,8 +183,13 @@ fn sequence(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> Ev
     Ok(params[params_size - 1].clone())
 }
 
-fn cons(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
-    assert_eq!(params.len(), 2);
+fn cons(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+    if params.len() != 2 {
+        return Err(EvaluationError::RuntimeError(
+            format!("cons expected 2 arguments, got {}", params.len()),
+            backtrace,
+        ));
+    }
     Ok(Structure::Cons(Box::new((
         params[0].clone(),
         params[1].clone(),

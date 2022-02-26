@@ -111,17 +111,17 @@ impl Structure {
 
     pub fn from_string(s: &str) -> Structure {
         // create cons from string
-        let len = s.len();
+        let len = s.chars().count();
         if len == 0 {
             Structure::Cons(Box::new((Structure::Nil, Structure::Nil)))
         } else {
             let mut chars = s.chars();
             let car = Structure::Char(chars.next().unwrap());
-            let cdr = if len == 1 {
+            let remaining_input = chars.as_str();
+            let cdr = if remaining_input.is_empty() {
                 Structure::Nil
             } else {
-                let recursive_input = s[1..s.len()].to_string();
-                Structure::from_string(&recursive_input)
+                Structure::from_string(remaining_input)
             };
             Structure::Cons(Box::new((car, cdr)))
         }
