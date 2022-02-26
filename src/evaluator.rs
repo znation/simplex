@@ -88,6 +88,20 @@ impl Evaluator {
             |_node, outer_symbols, outer_backtrace, parameter_list, params| {
                 let body = parameter_list.last().unwrap();
                 let mut symbols = outer_symbols;
+
+                // TODO: support variadic functions
+                // for now, just ensure that the function is getting the number of parameters it expects.
+                if parameter_list.len() - 1 != params.len() {
+                    return Err(EvaluationError::RuntimeError(
+                        format!(
+                            "lambda expression expected {} parameters, got {}",
+                            parameter_list.len() - 1,
+                            params.len()
+                        ),
+                        outer_backtrace,
+                    ));
+                }
+
                 symbols.extend(dict_of_params(&parameter_list, &params));
                 let mut e = Evaluator {
                     symbols,

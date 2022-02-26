@@ -157,10 +157,19 @@ impl Structure {
         }
     }
 
+    // allow implicit conversion to bool from any type
     pub fn boolean(&self) -> bool {
         match self {
             Structure::Boolean(b) => *b,
-            _ => panic!(),
+            Structure::Byte(b) => *b != 0,
+            Structure::Char(c) => *c != '\0',
+            Structure::Cons(c) => c.0.kind() != StructureKind::Nil,
+            Structure::Dict(d) => !d.is_empty(),
+            Structure::FloatingPoint(f) => *f != 0.0,
+            Structure::Function(_) => true,
+            Structure::Integer(i) => *i != 0,
+            Structure::Invalid => panic!(),
+            Structure::Nil => false,
         }
     }
 

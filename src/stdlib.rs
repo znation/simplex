@@ -30,11 +30,16 @@ fn unary_minus(n: &Structure) -> Structure {
     }
 }
 
-fn plus(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+fn plus(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
     if params.len() == 1 {
         return Ok(unary_plus(&params[0]));
     }
-    assert_eq!(params.len(), 2);
+    if params.len() != 2 {
+        return Err(EvaluationError::RuntimeError(
+            format!("+ expects 1 or 2 parameters, got {}", params.len()),
+            backtrace,
+        ));
+    }
     if params[0].kind() == StructureKind::Integer && params[1].kind() == StructureKind::Integer {
         Ok(Structure::Integer(
             params[0].integer() + params[1].integer(),
@@ -46,11 +51,16 @@ fn plus(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> Evalua
     }
 }
 
-fn minus(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+fn minus(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
     if params.len() == 1 {
         return Ok(unary_minus(&params[0]));
     }
-    assert_eq!(params.len(), 2);
+    if params.len() != 2 {
+        return Err(EvaluationError::RuntimeError(
+            format!("- expects 1 or 2 parameters, got {}", params.len()),
+            backtrace,
+        ));
+    }
     if params[0].kind() == StructureKind::Integer && params[1].kind() == StructureKind::Integer {
         Ok(Structure::Integer(
             params[0].integer() - params[1].integer(),
@@ -91,8 +101,13 @@ fn times(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Evalua
     }
 }
 
-fn divide(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
-    assert_eq!(params.len(), 2);
+fn divide(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+    if params.len() != 2 {
+        return Err(EvaluationError::RuntimeError(
+            format!("/ expects 2 or more parameters, got {}", params.len()),
+            backtrace,
+        ));
+    }
     if params[0].kind() == StructureKind::Integer && params[1].kind() == StructureKind::Integer {
         Ok(Structure::Integer(
             params[0].integer() / params[1].integer(),
@@ -104,9 +119,13 @@ fn divide(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> Eval
     }
 }
 
-fn equals(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
-    let params_size = params.len();
-    assert!(params_size >= 2);
+fn equals(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+    if params.len() < 2 {
+        return Err(EvaluationError::RuntimeError(
+            format!("= expects 2 or more parameters, got {}", params.len()),
+            backtrace,
+        ));
+    }
     let reference = &params[0];
     let mut ret = true;
     for param in params.iter().skip(1) {
@@ -117,7 +136,12 @@ fn equals(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> Eval
 
 fn lessthan(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
     let params_size = params.len();
-    assert_eq!(params_size, 2);
+    if params_size != 2 {
+        return Err(EvaluationError::RuntimeError(
+            format!("< expects 2 parameters, got {}", params_size),
+            backtrace,
+        ));
+    }
     let reference = params[0].clone();
     let compare = params[1].clone();
     if reference.kind() != compare.kind() {
@@ -147,7 +171,12 @@ fn lessthan(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Eval
 
 fn greaterthan(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
     let params_size = params.len();
-    assert_eq!(params_size, 2);
+    if params_size != 2 {
+        return Err(EvaluationError::RuntimeError(
+            format!("> expects 2 parameters, got {}", params_size),
+            backtrace,
+        ));
+    }
     let reference = params[0].clone();
     let compare = params[1].clone();
     if reference.kind() != compare.kind() {
@@ -197,7 +226,12 @@ fn cons(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Evaluat
 }
 
 fn car(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
-    assert_eq!(params.len(), 1);
+    if params.len() != 1 {
+        return Err(EvaluationError::RuntimeError(
+            format!("car expected 1 argument, got {}", params.len()),
+            backtrace,
+        ));
+    }
     let cons = params[0].clone();
     match cons {
         Structure::Cons(c) => Ok(c.0),
@@ -211,7 +245,12 @@ fn car(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Evaluatio
 }
 
 fn cdr(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
-    assert_eq!(params.len(), 1);
+    if params.len() != 1 {
+        return Err(EvaluationError::RuntimeError(
+            format!("cdr expected 1 argument, got {}", params.len()),
+            backtrace,
+        ));
+    }
     let cons = params[0].clone();
     match cons {
         Structure::Cons(c) => Ok(c.1),
