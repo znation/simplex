@@ -74,7 +74,7 @@ impl Display for EvaluationError {
 
 impl From<io::Error> for EvaluationError {
     fn from(e: io::Error) -> Self {
-        return EvaluationError::RuntimeError(format!("{}", e), Backtrace::empty());
+        EvaluationError::RuntimeError(format!("{}", e), Backtrace::empty())
     }
 }
 
