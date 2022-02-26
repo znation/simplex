@@ -83,7 +83,14 @@ impl Evaluator {
         assert_eq!(children[0].kind(), NodeKind::Identifier);
         assert_eq!(children[0].string(), "lambda");
         assert_eq!(children[1].kind(), NodeKind::OptionalParameterList);
-        let parameter_list = children[1].children()[0].children();
+        let children_of_children = children[1].children();
+        if children_of_children.is_empty() {
+            return Err(EvaluationError::RuntimeError(
+                "lambda expects 2 or more parameters, got 0".to_string(),
+                self.backtrace.clone(),
+            ));
+        }
+        let parameter_list = children_of_children[0].children();
         let function_body = FunctionBody::Lambda(
             |_node, outer_symbols, outer_backtrace, parameter_list, params| {
                 let body = parameter_list.last().unwrap();
@@ -126,11 +133,34 @@ impl Evaluator {
         assert_eq!(child0.kind(), NodeKind::Identifier);
         assert_eq!(child0.string(), "let");
         assert_eq!(child1.kind(), NodeKind::OptionalParameterList);
-        let parameter_list = child1.children().get(0).unwrap();
+        let children_of_children = child1.children();
+        if children_of_children.is_empty() {
+            return Err(EvaluationError::RuntimeError(
+                "let expression expects 2 parameters, got 0".to_string(),
+                self.backtrace.clone(),
+            ));
+        }
+        let parameter_list = children_of_children.get(0).unwrap();
         let id_with_value = parameter_list.children();
-        assert_eq!(id_with_value.len(), 2);
+        if id_with_value.len() != 2 {
+            return Err(EvaluationError::RuntimeError(
+                format!(
+                    "let expression expects 2 parameters, got {}",
+                    id_with_value.len()
+                ),
+                self.backtrace.clone(),
+            ));
+        }
         let id = id_with_value.get(0).unwrap();
-        assert_eq!(id.kind(), NodeKind::Identifier);
+        if id.kind() != NodeKind::Identifier {
+            return Err(EvaluationError::RuntimeError(
+                format!(
+                    "first parameter to let expression should be an identifier, found {:#?}",
+                    id.kind()
+                ),
+                self.backtrace.clone(),
+            ));
+        }
         let new_symbol = self.eval_node(id_with_value.get(1).unwrap())?;
         self.symbols.insert(id.string().clone(), new_symbol);
         Ok(Structure::Boolean(true))
@@ -175,7 +205,14 @@ impl Evaluator {
         assert_eq!(children[0].kind(), NodeKind::Identifier);
         assert_eq!(children[0].string(), "cond");
         assert_eq!(children[1].kind(), NodeKind::OptionalParameterList);
-        let parameters = children[1].children()[0].children();
+        let children_of_children = children[1].children();
+        if children_of_children.is_empty() {
+            return Err(EvaluationError::RuntimeError(
+                "cond expression expects pairs of conditions and expressions as parameters; got none".to_string(),
+                self.backtrace.clone(),
+            ));
+        }
+        let parameters = children_of_children[0].children();
         if parameters.len() % 2 != 0 {
             return Err(EvaluationError::RuntimeError(
                 "cond must take an even number of parameters (pairs of condition and expression)"
@@ -286,12 +323,12 @@ impl Evaluator {
     }
 
     pub fn eval_program(&mut self, node: &ASTNode) -> EvaluationResult {
-        let mut ret = Ok(Structure::new());
+        let mut ret = Structure::new();
         assert_eq!(node.kind(), NodeKind::Program);
         for exp in node.children() {
-            ret = self.eval_node(exp);
+            ret = self.eval_node(exp)?;
         }
-        ret
+        Ok(ret)
     }
 }
 

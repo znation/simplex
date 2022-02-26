@@ -9,30 +9,85 @@ use crate::{
     structure::{Backtrace, EvaluationResult, Function, Structure, StructureKind, SymbolTable},
 };
 
-fn extract_float(n: &Structure) -> f64 {
-    if n.kind() == StructureKind::Integer {
-        return n.integer() as f64;
-    }
-    n.floating_point()
+fn extract_float(n: &Structure, backtrace: &Backtrace) -> Result<f64, EvaluationError> {
+    let result = match n {
+        Structure::Boolean(b) => {
+            if *b {
+                1.0
+            } else {
+                0.0
+            }
+        }
+        Structure::Byte(b) => *b as f64,
+        Structure::Char(_) => {
+            return Err(EvaluationError::RuntimeError(
+                "attempted to extract a float from a char".to_string(),
+                backtrace.clone(),
+            ))
+        }
+        Structure::Cons(_) => {
+            return Err(EvaluationError::RuntimeError(
+                "attempted to extract a float from a cons".to_string(),
+                backtrace.clone(),
+            ))
+        }
+        Structure::Dict(_) => {
+            return Err(EvaluationError::RuntimeError(
+                "attempted to extract a float from a dict".to_string(),
+                backtrace.clone(),
+            ))
+        }
+        Structure::FloatingPoint(f) => *f,
+        Structure::Function(_) => {
+            return Err(EvaluationError::RuntimeError(
+                "attempted to extract a float from a function".to_string(),
+                backtrace.clone(),
+            ))
+        }
+        Structure::Integer(i) => *i as f64,
+        Structure::Invalid => panic!(),
+        Structure::Nil => {
+            return Err(EvaluationError::RuntimeError(
+                "attempted to extract a float from nil".to_string(),
+                backtrace.clone(),
+            ))
+        }
+    };
+    Ok(result)
 }
 
-fn unary_plus(n: &Structure) -> Structure {
-    assert!(n.kind() == StructureKind::Integer || n.kind() == StructureKind::FloatingPoint);
-    n.clone()
-}
-
-fn unary_minus(n: &Structure) -> Structure {
-    if n.kind() == StructureKind::Integer {
-        Structure::Integer(-(n.integer()))
+fn unary_plus(n: &Structure, node: &ASTNode, backtrace: Backtrace) -> EvaluationResult {
+    if n.kind() != StructureKind::Integer && n.kind() != StructureKind::FloatingPoint {
+        Err(EvaluationError::type_mismatch(
+            node,
+            backtrace,
+            StructureKind::FloatingPoint,
+            n.kind(),
+        ))
     } else {
-        assert_eq!(n.kind(), StructureKind::FloatingPoint);
-        Structure::FloatingPoint(-(n.floating_point()))
+        Ok(n.clone())
     }
 }
 
-fn plus(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+fn unary_minus(n: &Structure, node: &ASTNode, backtrace: Backtrace) -> EvaluationResult {
+    let result = match n {
+        Structure::FloatingPoint(_) => Structure::FloatingPoint(-(n.floating_point())),
+        Structure::Integer(_) => Structure::Integer(-(n.integer())),
+        _ => {
+            return Err(EvaluationError::type_mismatch(
+                node,
+                backtrace,
+                StructureKind::FloatingPoint,
+                n.kind(),
+            ))
+        }
+    };
+    Ok(result)
+}
+
+fn plus(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
     if params.len() == 1 {
-        return Ok(unary_plus(&params[0]));
+        return unary_plus(&params[0], &node, backtrace);
     }
     if params.len() != 2 {
         return Err(EvaluationError::RuntimeError(
@@ -45,15 +100,15 @@ fn plus(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Evaluat
             params[0].integer() + params[1].integer(),
         ))
     } else {
-        Ok(Structure::FloatingPoint(
-            extract_float(&params[0]) + extract_float(&params[1]),
-        ))
+        let a = extract_float(&params[0], &backtrace)?;
+        let b = extract_float(&params[1], &backtrace)?;
+        Ok(Structure::FloatingPoint(a + b))
     }
 }
 
-fn minus(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+fn minus(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
     if params.len() == 1 {
-        return Ok(unary_minus(&params[0]));
+        return unary_minus(&params[0], &node, backtrace);
     }
     if params.len() != 2 {
         return Err(EvaluationError::RuntimeError(
@@ -66,9 +121,9 @@ fn minus(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Evalua
             params[0].integer() - params[1].integer(),
         ))
     } else {
-        Ok(Structure::FloatingPoint(
-            extract_float(&params[0]) - extract_float(&params[1]),
-        ))
+        let a = extract_float(&params[0], &backtrace)?;
+        let b = extract_float(&params[1], &backtrace)?;
+        Ok(Structure::FloatingPoint(a - b))
     }
 }
 
@@ -95,7 +150,8 @@ fn times(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Evalua
     } else {
         let mut ret: f64 = 1.0;
         for param in params {
-            ret *= extract_float(&param);
+            let next = extract_float(&param, &backtrace)?;
+            ret *= next;
         }
         Ok(Structure::FloatingPoint(ret))
     }
@@ -109,13 +165,20 @@ fn divide(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Evalu
         ));
     }
     if params[0].kind() == StructureKind::Integer && params[1].kind() == StructureKind::Integer {
-        Ok(Structure::Integer(
-            params[0].integer() / params[1].integer(),
-        ))
+        let a = params[0].integer();
+        let b = params[1].integer();
+        if b == 0 {
+            Err(EvaluationError::RuntimeError(
+                "divide by zero".to_string(),
+                backtrace,
+            ))
+        } else {
+            Ok(Structure::Integer(a / b))
+        }
     } else {
-        Ok(Structure::FloatingPoint(
-            extract_float(&params[0]) / extract_float(&params[1]),
-        ))
+        let a = extract_float(&params[0], &backtrace)?;
+        let b = extract_float(&params[1], &backtrace)?;
+        Ok(Structure::FloatingPoint(a / b))
     }
 }
 
@@ -204,11 +267,16 @@ fn greaterthan(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> E
     Ok(Structure::Boolean(ret))
 }
 
-fn sequence(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+fn sequence(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
     // rely on the interpreter itself being sequential (single threaded)
     // simply return the last accumulated result
     let params_size = params.len();
-    assert_ne!(params_size, 0);
+    if params_size == 0 {
+        return Err(EvaluationError::RuntimeError(
+            "sequence expected 1 or more arguments, got 0".to_string(),
+            backtrace,
+        ));
+    }
     Ok(params[params_size - 1].clone())
 }
 
@@ -307,6 +375,14 @@ fn dict_get(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Eval
         ));
     }
     let key = params[0].string(backtrace.clone(), Some(&node))?;
+    if params[1].kind() != StructureKind::Dict {
+        return Err(EvaluationError::type_mismatch(
+            &node,
+            backtrace,
+            StructureKind::Dict,
+            params[1].kind(),
+        ));
+    }
     let dict = params[1].dict();
     match dict.get(&key) {
         Some(s) => Ok(s.clone()),
@@ -324,8 +400,16 @@ fn dict_set(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Eval
             backtrace,
         ));
     }
-    let key = params[0].string(backtrace, Some(&node))?;
+    let key = params[0].string(backtrace.clone(), Some(&node))?;
     let value = params[1].clone();
+    if params[2].kind() != StructureKind::Dict {
+        return Err(EvaluationError::type_mismatch(
+            &node,
+            backtrace,
+            StructureKind::Dict,
+            params[2].kind(),
+        ));
+    }
     let mut dict = params[2].dict().clone();
     dict.insert(key, value);
     Ok(Structure::Dict(dict))

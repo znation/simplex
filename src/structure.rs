@@ -197,7 +197,14 @@ impl Structure {
         let node = node.unwrap_or(&invalid_node);
         let cons = match self {
             Structure::Cons(b) => &*b,
-            _ => panic!(),
+            _ => {
+                return Err(EvaluationError::type_mismatch(
+                    node,
+                    backtrace,
+                    StructureKind::Cons,
+                    self.kind(),
+                ))
+            }
         };
         let car = &cons.0;
         let cdr = &cons.1;
