@@ -448,7 +448,7 @@ fn read_bytes(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> E
     let max_count = if params.is_empty() {
         MAX_READ_COUNT
     } else if params.len() == 1 {
-        params[1].integer() as usize
+        params[0].integer() as usize
     } else {
         return Err(EvaluationError::RuntimeError(
             "too many parameters to `read_bytes`".to_string(),
