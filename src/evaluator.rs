@@ -1,5 +1,6 @@
 use crate::structure::Backtrace;
 use crate::structure::Empty;
+use crate::structure::StructureKind;
 use std::collections::HashMap;
 
 use crate::astnode::ASTNode;
@@ -33,7 +34,7 @@ fn dict_of_params(
 
 pub struct Evaluator {
     symbols: SymbolTable,
-    backtrace: Backtrace
+    backtrace: Backtrace,
 }
 
 impl Evaluator {
@@ -46,7 +47,7 @@ impl Evaluator {
     pub fn new() -> Evaluator {
         let mut ret = Evaluator {
             symbols: SymbolTable::empty(),
-            backtrace: Backtrace::empty()
+            backtrace: Backtrace::empty(),
         };
 
         // Rust-native parts of the standard library
@@ -54,7 +55,7 @@ impl Evaluator {
 
         // Simplex stdlib (written in simplex)
         let simplex_lib = include_str!("stdlib.simplex");
-        let result = ret.eval(simplex_lib.to_string());
+        let result = ret.eval(simplex_lib);
         assert!(result.is_ok());
 
         ret
@@ -71,10 +72,7 @@ impl Evaluator {
     }
 
     pub fn eval<S: AsRef<str>>(&mut self, str: S) -> EvaluationResult {
-        let node = match Parser::parse(str) {
-            Ok(n) => n,
-            Err(e) => return Err(EvaluationError::from_parse_error(e)),
-        };
+        let node = Parser::parse(str)?;
         self.eval_node(&node)
     }
 
@@ -85,17 +83,40 @@ impl Evaluator {
         assert_eq!(children[0].kind(), NodeKind::Identifier);
         assert_eq!(children[0].string(), "lambda");
         assert_eq!(children[1].kind(), NodeKind::OptionalParameterList);
-        let parameter_list = children[1].children()[0].children();
-        let function_body = FunctionBody::Lambda(|_node, outer_symbols, outer_backtrace, parameter_list, params| {
-            let body = parameter_list.get(parameter_list.len() - 1).unwrap();
-            let mut symbols = outer_symbols.clone();
-            symbols.extend(dict_of_params(&parameter_list, &params));
-            let mut e = Evaluator {
-                symbols,
-                backtrace: outer_backtrace
-            };
-            e.eval_node(body)
-        });
+        let children_of_children = children[1].children();
+        if children_of_children.is_empty() {
+            return Err(EvaluationError::RuntimeError(
+                "lambda expects 2 or more parameters, got 0".to_string(),
+                self.backtrace.clone(),
+            ));
+        }
+        let parameter_list = children_of_children[0].children();
+        let function_body = FunctionBody::Lambda(
+            |_node, outer_symbols, outer_backtrace, parameter_list, params| {
+                let body = parameter_list.last().unwrap();
+                let mut symbols = outer_symbols;
+
+                // TODO: support variadic functions
+                // for now, just ensure that the function is getting the number of parameters it expects.
+                if parameter_list.len() - 1 != params.len() {
+                    return Err(EvaluationError::RuntimeError(
+                        format!(
+                            "lambda expression expected {} parameters, got {}",
+                            parameter_list.len() - 1,
+                            params.len()
+                        ),
+                        outer_backtrace,
+                    ));
+                }
+
+                symbols.extend(dict_of_params(&parameter_list, &params));
+                let mut e = Evaluator {
+                    symbols,
+                    backtrace: outer_backtrace,
+                };
+                e.eval_node(body)
+            },
+        );
         let function = Function {
             parameter_list: parameter_list.clone(),
             function: function_body,
@@ -112,15 +133,35 @@ impl Evaluator {
         assert_eq!(child0.kind(), NodeKind::Identifier);
         assert_eq!(child0.string(), "let");
         assert_eq!(child1.kind(), NodeKind::OptionalParameterList);
-        let parameter_list = child1.children().get(0).unwrap();
+        let children_of_children = child1.children();
+        if children_of_children.is_empty() {
+            return Err(EvaluationError::RuntimeError(
+                "let expression expects 2 parameters, got 0".to_string(),
+                self.backtrace.clone(),
+            ));
+        }
+        let parameter_list = children_of_children.get(0).unwrap();
         let id_with_value = parameter_list.children();
-        assert_eq!(id_with_value.len(), 2);
+        if id_with_value.len() != 2 {
+            return Err(EvaluationError::RuntimeError(
+                format!(
+                    "let expression expects 2 parameters, got {}",
+                    id_with_value.len()
+                ),
+                self.backtrace.clone(),
+            ));
+        }
         let id = id_with_value.get(0).unwrap();
-        assert_eq!(id.kind(), NodeKind::Identifier);
-        let new_symbol = match self.eval_node(id_with_value.get(1).unwrap()) {
-            Ok(result) => result,
-            Err(e) => return Err(e),
-        };
+        if id.kind() != NodeKind::Identifier {
+            return Err(EvaluationError::RuntimeError(
+                format!(
+                    "first parameter to let expression should be an identifier, found {:#?}",
+                    id.kind()
+                ),
+                self.backtrace.clone(),
+            ));
+        }
+        let new_symbol = self.eval_node(id_with_value.get(1).unwrap())?;
         self.symbols.insert(id.string().clone(), new_symbol);
         Ok(Structure::Boolean(true))
     }
@@ -131,13 +172,26 @@ impl Evaluator {
         assert_eq!(children[0].kind(), NodeKind::Identifier);
         assert_eq!(children[0].string(), "if");
         assert_eq!(children[1].kind(), NodeKind::OptionalParameterList);
-        let parameters = children[1].children()[0].children();
+        let children_of_children = children[1].children();
+        if children_of_children.is_empty() {
+            return Err(EvaluationError::RuntimeError(
+                "if expression expects 3 parameters, got 0".to_string(),
+                self.backtrace.clone(),
+            ));
+        }
+        let parameters = children_of_children[0].children();
+        if parameters.len() != 3 {
+            return Err(EvaluationError::RuntimeError(
+                format!(
+                    "if expression expects 3 parameters, got {}",
+                    parameters.len()
+                ),
+                self.backtrace.clone(),
+            ));
+        }
         assert_eq!(parameters.len(), 3);
         let result = self.eval_node(parameters.get(0).unwrap());
-        let condition = match result {
-            Ok(c) => c.boolean(),
-            Err(e) => return Err(e),
-        };
+        let condition = result?.boolean();
         if condition {
             self.eval_node(parameters.get(1).unwrap())
         } else {
@@ -151,30 +205,34 @@ impl Evaluator {
         assert_eq!(children[0].kind(), NodeKind::Identifier);
         assert_eq!(children[0].string(), "cond");
         assert_eq!(children[1].kind(), NodeKind::OptionalParameterList);
-        let parameters = children[1].children()[0].children();
+        let children_of_children = children[1].children();
+        if children_of_children.is_empty() {
+            return Err(EvaluationError::RuntimeError(
+                "cond expression expects pairs of conditions and expressions as parameters; got none".to_string(),
+                self.backtrace.clone(),
+            ));
+        }
+        let parameters = children_of_children[0].children();
         if parameters.len() % 2 != 0 {
-            return Err(EvaluationError {
-                message: "cond must take an even number of parameters (pairs of condition and expression)".to_string(),
-                backtrace: self.backtrace.clone()
-             });
+            return Err(EvaluationError::RuntimeError(
+                "cond must take an even number of parameters (pairs of condition and expression)"
+                    .to_string(),
+                self.backtrace.clone(),
+            ));
         }
         let mut i = 0;
         while i < parameters.len() {
             let result = self.eval_node(parameters.get(i).unwrap());
-            let condition = match result {
-                Ok(s) => s.boolean(),
-                Err(e) => return Err(e),
-            };
+            let condition = result?.boolean();
             if condition {
-                return self.eval_node(parameters.get(i+1).unwrap());
+                return self.eval_node(parameters.get(i + 1).unwrap());
             }
             i += 2;
         }
-        Err(EvaluationError {
-            message: "`cond` expression did not return a value (no condition evaluated to true)"
-                .to_string(),
-                backtrace: self.backtrace.clone()
-        })
+        Err(EvaluationError::RuntimeError(
+            "`cond` expression did not return a value (no condition evaluated to true)".to_string(),
+            self.backtrace.clone(),
+        ))
     }
 
     pub fn eval_parameters(&mut self, node: &ASTNode) -> Result<Vec<Structure>, EvaluationError> {
@@ -190,11 +248,8 @@ impl Evaluator {
         assert_eq!(node.kind(), NodeKind::ParameterList);
         let mut ret = Vec::new();
         for child in node.children() {
-            let result = self.eval_node(child);
-            match result {
-                Ok(s) => ret.push(s),
-                Err(e) => return Err(e),
-            }
+            let result = self.eval_node(child)?;
+            ret.push(result);
         }
         Ok(ret)
     }
@@ -216,24 +271,23 @@ impl Evaluator {
             }
         }
 
-        let function_node = match self.eval_node(first_child) {
-            Ok(result) => result,
-            Err(e) => return Err(e),
-        };
-        let params = match self.eval_parameters(children.get(1).unwrap()) {
-            Ok(result) => result,
-            Err(e) => return Err(e),
-        };
-        self.backtrace.push((first_child.string().clone(), node.line(), node.col()));
-        let result = match function_node {
-            Structure::Function(callable) => callable.call(node,
-                &self.symbols,
-                &self.backtrace,
-                params),
-            _ => panic!(),
-        };
-        self.backtrace.pop();
-        result
+        let function_node = self.eval_node(first_child)?;
+        let params = self.eval_parameters(children.get(1).unwrap())?;
+        match function_node {
+            Structure::Function(ref callable) => {
+                self.backtrace
+                    .push((function_node.to_string(), node.line(), node.col()));
+                let retval = callable.call(node, &self.symbols, &self.backtrace, params);
+                self.backtrace.pop();
+                retval
+            }
+            _ => Err(EvaluationError::type_mismatch(
+                node,
+                self.backtrace.clone(),
+                StructureKind::Function,
+                function_node.kind(),
+            )),
+        }
     }
 
     pub fn eval_identifier(&self, node: &ASTNode) -> EvaluationResult {
@@ -247,12 +301,10 @@ impl Evaluator {
         let result = self.symbols.get(str);
         match result {
             Some(structure) => Ok(structure.clone()),
-            None => {
-                Err(EvaluationError {
-                    message: format!("undeclared identifier: {}", str),
-                    backtrace: self.backtrace.clone()
-                })
-            },
+            None => Err(EvaluationError::RuntimeError(
+                format!("undeclared identifier: {}", str),
+                self.backtrace.clone(),
+            )),
         }
     }
 
@@ -271,12 +323,12 @@ impl Evaluator {
     }
 
     pub fn eval_program(&mut self, node: &ASTNode) -> EvaluationResult {
-        let mut ret = Ok(Structure::new());
+        let mut ret = Structure::new();
         assert_eq!(node.kind(), NodeKind::Program);
         for exp in node.children() {
-            ret = self.eval_node(exp);
+            ret = self.eval_node(exp)?;
         }
-        ret
+        Ok(ret)
     }
 }
 
@@ -363,19 +415,28 @@ mod tests {
     #[test]
     fn test_cond_expressions() {
         let mut e = Evaluator::new();
-        assert_eq!(e.eval("(cond
+        assert_eq!(
+            e.eval(
+                "(cond
             false 1
             true 2
             false 3
-            true 4)"), Ok(Structure::Integer(2)));
-        
+            true 4)"
+            ),
+            Ok(Structure::Integer(2))
+        );
 
         // make sure the false or redundant paths
         // don't get executed, by using an undeclared identifier
-        assert_eq!(e.eval("(cond
+        assert_eq!(
+            e.eval(
+                "(cond
             false missing1
             false missing2
             true 3
-            true missing4)"), Ok(Structure::Integer(3)));
+            true missing4)"
+            ),
+            Ok(Structure::Integer(3))
+        );
     }
 }

@@ -1,61 +1,81 @@
+use crate::structure::Empty;
+use std::{error::Error, fmt::Display, io};
+
 use crate::{
     astnode::{ASTNode, NodeKind},
-    structure::{StructureKind, Backtrace, Empty},
+    structure::{Backtrace, StructureKind},
 };
 
-#[derive(Debug, PartialEq)]
-pub struct ParseError {
-    pub message: String,
-}
-
-impl ParseError {
-    pub fn from<S1: AsRef<str>, S2: AsRef<str>>(
-        kind: NodeKind,
-        expected: S1,
-        actual: S2,
-        line: i64,
-        col: i64,
-    ) -> ParseError {
-        ParseError {
-            message: format!(
-                "{}|{}: parse error while attempting to parse {:?}: expected {}, found {}",
-                line,
-                col,
-                kind,
-                expected.as_ref(),
-                actual.as_ref()
-            ),
-        }
+fn format_backtrace(backtrace: &Backtrace) -> String {
+    let mut backtrace_str = String::new();
+    for (i, (function_name, line, _col)) in backtrace.iter().rev().enumerate() {
+        backtrace_str += format!("frame #{}: {} at <stdin>:{}\n", i, function_name, line).as_ref();
     }
+    backtrace_str
 }
 
 #[derive(Debug, PartialEq)]
-pub struct EvaluationError {
-    pub message: String,
-    pub backtrace: Backtrace
+pub enum EvaluationError {
+    ParseError(String),
+    RuntimeError(String, Backtrace),
 }
 
 impl EvaluationError {
-    pub fn from_parse_error(e: ParseError) -> EvaluationError {
-        EvaluationError { message: e.message, backtrace: Backtrace::empty() }
-    }
-
     pub fn type_mismatch(
         node: &ASTNode,
         backtrace: Backtrace,
         expected: StructureKind,
         found: StructureKind,
     ) -> EvaluationError {
-        dbg!(&backtrace);
-        EvaluationError {
-            message: format!(
+        EvaluationError::RuntimeError(
+            format!(
                 "{}|{}: type mismatch error: expected {:?}, found {:?}",
                 node.line(),
                 node.col(),
                 expected,
                 found
             ),
-            backtrace
+            backtrace,
+        )
+    }
+    pub fn parse_error<S1: AsRef<str>, S2: AsRef<str>>(
+        kind: NodeKind,
+        expected: S1,
+        actual: S2,
+        line: i64,
+        col: i64,
+    ) -> EvaluationError {
+        EvaluationError::ParseError(format!(
+            "{}|{}: parse error while attempting to parse {:?}: expected {}, found {}",
+            line,
+            col,
+            kind,
+            expected.as_ref(),
+            actual.as_ref()
+        ))
+    }
+}
+
+impl Display for EvaluationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EvaluationError::ParseError(msg) => write!(f, "{}", msg),
+            EvaluationError::RuntimeError(msg, backtrace) => {
+                write!(
+                    f,
+                    "\nbacktrace: \n\n{}\nexception message:\n\n{}",
+                    format_backtrace(backtrace),
+                    msg
+                )
+            }
         }
     }
 }
+
+impl From<io::Error> for EvaluationError {
+    fn from(e: io::Error) -> Self {
+        EvaluationError::RuntimeError(format!("{}", e), Backtrace::empty())
+    }
+}
+
+impl Error for EvaluationError {}

@@ -1,65 +1,139 @@
-use std::{collections::HashMap, io::{stdin, Read}};
+use std::{
+    collections::HashMap,
+    io::{stdin, Read},
+};
 
 use crate::{
     astnode::ASTNode,
     errors::EvaluationError,
-    structure::{EvaluationResult, Function, Structure, StructureKind, SymbolTable, Backtrace},
+    structure::{Backtrace, EvaluationResult, Function, Structure, StructureKind, SymbolTable},
 };
 
-fn extract_float(n: &Structure) -> f64 {
-    if n.kind() == StructureKind::Integer {
-        return n.integer() as f64;
-    }
-    n.floating_point()
+fn extract_float(n: &Structure, backtrace: &Backtrace) -> Result<f64, EvaluationError> {
+    let result = match n {
+        Structure::Boolean(b) => {
+            if *b {
+                1.0
+            } else {
+                0.0
+            }
+        }
+        Structure::Byte(b) => *b as f64,
+        Structure::Char(_) => {
+            return Err(EvaluationError::RuntimeError(
+                "attempted to extract a float from a char".to_string(),
+                backtrace.clone(),
+            ))
+        }
+        Structure::Cons(_) => {
+            return Err(EvaluationError::RuntimeError(
+                "attempted to extract a float from a cons".to_string(),
+                backtrace.clone(),
+            ))
+        }
+        Structure::Dict(_) => {
+            return Err(EvaluationError::RuntimeError(
+                "attempted to extract a float from a dict".to_string(),
+                backtrace.clone(),
+            ))
+        }
+        Structure::FloatingPoint(f) => *f,
+        Structure::Function(_) => {
+            return Err(EvaluationError::RuntimeError(
+                "attempted to extract a float from a function".to_string(),
+                backtrace.clone(),
+            ))
+        }
+        Structure::Integer(i) => *i as f64,
+        Structure::Invalid => panic!(),
+        Structure::Nil => {
+            return Err(EvaluationError::RuntimeError(
+                "attempted to extract a float from nil".to_string(),
+                backtrace.clone(),
+            ))
+        }
+    };
+    Ok(result)
 }
 
-fn unary_plus(n: &Structure) -> Structure {
-    assert!(n.kind() == StructureKind::Integer || n.kind() == StructureKind::FloatingPoint);
-    n.clone()
-}
-
-fn unary_minus(n: &Structure) -> Structure {
-    if n.kind() == StructureKind::Integer {
-        Structure::Integer(-(n.integer()))
+fn unary_plus(n: &Structure, node: &ASTNode, backtrace: Backtrace) -> EvaluationResult {
+    if n.kind() != StructureKind::Integer && n.kind() != StructureKind::FloatingPoint {
+        Err(EvaluationError::type_mismatch(
+            node,
+            backtrace,
+            StructureKind::FloatingPoint,
+            n.kind(),
+        ))
     } else {
-        assert_eq!(n.kind(), StructureKind::FloatingPoint);
-        Structure::FloatingPoint(-(n.floating_point()))
+        Ok(n.clone())
     }
 }
 
-fn plus(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+fn unary_minus(n: &Structure, node: &ASTNode, backtrace: Backtrace) -> EvaluationResult {
+    let result = match n {
+        Structure::FloatingPoint(_) => Structure::FloatingPoint(-(n.floating_point())),
+        Structure::Integer(_) => Structure::Integer(-(n.integer())),
+        _ => {
+            return Err(EvaluationError::type_mismatch(
+                node,
+                backtrace,
+                StructureKind::FloatingPoint,
+                n.kind(),
+            ))
+        }
+    };
+    Ok(result)
+}
+
+fn plus(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
     if params.len() == 1 {
-        return Ok(unary_plus(&params[0]));
+        return unary_plus(&params[0], &node, backtrace);
     }
-    assert_eq!(params.len(), 2);
+    if params.len() != 2 {
+        return Err(EvaluationError::RuntimeError(
+            format!("+ expects 1 or 2 parameters, got {}", params.len()),
+            backtrace,
+        ));
+    }
     if params[0].kind() == StructureKind::Integer && params[1].kind() == StructureKind::Integer {
         Ok(Structure::Integer(
             params[0].integer() + params[1].integer(),
         ))
     } else {
-        Ok(Structure::FloatingPoint(
-            extract_float(&params[0]) + extract_float(&params[1]),
-        ))
+        let a = extract_float(&params[0], &backtrace)?;
+        let b = extract_float(&params[1], &backtrace)?;
+        Ok(Structure::FloatingPoint(a + b))
     }
 }
 
-fn minus(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+fn minus(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
     if params.len() == 1 {
-        return Ok(unary_minus(&params[0]));
+        return unary_minus(&params[0], &node, backtrace);
     }
-    assert_eq!(params.len(), 2);
+    if params.len() != 2 {
+        return Err(EvaluationError::RuntimeError(
+            format!("- expects 1 or 2 parameters, got {}", params.len()),
+            backtrace,
+        ));
+    }
     if params[0].kind() == StructureKind::Integer && params[1].kind() == StructureKind::Integer {
         Ok(Structure::Integer(
             params[0].integer() - params[1].integer(),
         ))
     } else {
-        Ok(Structure::FloatingPoint(
-            extract_float(&params[0]) - extract_float(&params[1]),
-        ))
+        let a = extract_float(&params[0], &backtrace)?;
+        let b = extract_float(&params[1], &backtrace)?;
+        Ok(Structure::FloatingPoint(a - b))
     }
 }
 
-fn times(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+fn times(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+    if params.len() < 2 {
+        return Err(EvaluationError::RuntimeError(
+            format!("* expects 2 or more parameters, got {}", params.len()),
+            backtrace,
+        ));
+    }
     assert!(!params.is_empty());
     let mut all_integer = true;
     for param in &params {
@@ -76,28 +150,45 @@ fn times(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> Evalu
     } else {
         let mut ret: f64 = 1.0;
         for param in params {
-            ret *= extract_float(&param);
+            let next = extract_float(&param, &backtrace)?;
+            ret *= next;
         }
         Ok(Structure::FloatingPoint(ret))
     }
 }
 
-fn divide(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
-    assert_eq!(params.len(), 2);
+fn divide(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+    if params.len() != 2 {
+        return Err(EvaluationError::RuntimeError(
+            format!("/ expects 2 or more parameters, got {}", params.len()),
+            backtrace,
+        ));
+    }
     if params[0].kind() == StructureKind::Integer && params[1].kind() == StructureKind::Integer {
-        Ok(Structure::Integer(
-            params[0].integer() / params[1].integer(),
-        ))
+        let a = params[0].integer();
+        let b = params[1].integer();
+        if b == 0 {
+            Err(EvaluationError::RuntimeError(
+                "divide by zero".to_string(),
+                backtrace,
+            ))
+        } else {
+            Ok(Structure::Integer(a / b))
+        }
     } else {
-        Ok(Structure::FloatingPoint(
-            extract_float(&params[0]) / extract_float(&params[1]),
-        ))
+        let a = extract_float(&params[0], &backtrace)?;
+        let b = extract_float(&params[1], &backtrace)?;
+        Ok(Structure::FloatingPoint(a / b))
     }
 }
 
-fn equals(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
-    let params_size = params.len();
-    assert!(params_size >= 2);
+fn equals(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+    if params.len() < 2 {
+        return Err(EvaluationError::RuntimeError(
+            format!("= expects 2 or more parameters, got {}", params.len()),
+            backtrace,
+        ));
+    }
     let reference = &params[0];
     let mut ret = true;
     for param in params.iter().skip(1) {
@@ -108,7 +199,12 @@ fn equals(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> Eval
 
 fn lessthan(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
     let params_size = params.len();
-    assert_eq!(params_size, 2);
+    if params_size != 2 {
+        return Err(EvaluationError::RuntimeError(
+            format!("< expects 2 parameters, got {}", params_size),
+            backtrace,
+        ));
+    }
     let reference = params[0].clone();
     let compare = params[1].clone();
     if reference.kind() != compare.kind() {
@@ -138,7 +234,12 @@ fn lessthan(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Eval
 
 fn greaterthan(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
     let params_size = params.len();
-    assert_eq!(params_size, 2);
+    if params_size != 2 {
+        return Err(EvaluationError::RuntimeError(
+            format!("> expects 2 parameters, got {}", params_size),
+            backtrace,
+        ));
+    }
     let reference = params[0].clone();
     let compare = params[1].clone();
     if reference.kind() != compare.kind() {
@@ -166,16 +267,26 @@ fn greaterthan(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> E
     Ok(Structure::Boolean(ret))
 }
 
-fn sequence(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+fn sequence(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
     // rely on the interpreter itself being sequential (single threaded)
     // simply return the last accumulated result
     let params_size = params.len();
-    assert_ne!(params_size, 0);
+    if params_size == 0 {
+        return Err(EvaluationError::RuntimeError(
+            "sequence expected 1 or more arguments, got 0".to_string(),
+            backtrace,
+        ));
+    }
     Ok(params[params_size - 1].clone())
 }
 
-fn cons(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
-    assert_eq!(params.len(), 2);
+fn cons(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
+    if params.len() != 2 {
+        return Err(EvaluationError::RuntimeError(
+            format!("cons expected 2 arguments, got {}", params.len()),
+            backtrace,
+        ));
+    }
     Ok(Structure::Cons(Box::new((
         params[0].clone(),
         params[1].clone(),
@@ -183,7 +294,12 @@ fn cons(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> Evalua
 }
 
 fn car(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
-    assert_eq!(params.len(), 1);
+    if params.len() != 1 {
+        return Err(EvaluationError::RuntimeError(
+            format!("car expected 1 argument, got {}", params.len()),
+            backtrace,
+        ));
+    }
     let cons = params[0].clone();
     match cons {
         Structure::Cons(c) => Ok(c.0),
@@ -197,7 +313,12 @@ fn car(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Evaluatio
 }
 
 fn cdr(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
-    assert_eq!(params.len(), 1);
+    if params.len() != 1 {
+        return Err(EvaluationError::RuntimeError(
+            format!("cdr expected 1 argument, got {}", params.len()),
+            backtrace,
+        ));
+    }
     let cons = params[0].clone();
     match cons {
         Structure::Cons(c) => Ok(c.1),
@@ -229,19 +350,16 @@ fn dict(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Evaluati
     let size = params.len();
 
     if size % 2 != 0 {
-        return Err(EvaluationError {
-            message: "expected an even number of parameters to `dict`".to_string(),
-            backtrace: backtrace.clone()
-        });
+        return Err(EvaluationError::RuntimeError(
+            "expected an even number of parameters to `dict`".to_string(),
+            backtrace,
+        ));
     }
 
     let mut result = HashMap::new();
     let mut i = 0;
     while i < size {
-        let key = match params[i].string(backtrace.clone(), Some(&node)) {
-            Ok(s) => s,
-            Err(e) => return Err(e)
-        };
+        let key = params[i].string(backtrace.clone(), Some(&node))?;
         let value = params[i + 1].clone();
         result.insert(key, value);
         i += 2;
@@ -251,37 +369,47 @@ fn dict(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Evaluati
 
 fn dict_get(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
     if params.len() != 2 {
-        return Err(EvaluationError {
-            message: "expected 2 parameters to `dict.get`".to_string(),
-            backtrace: backtrace,
-        });
+        return Err(EvaluationError::RuntimeError(
+            "expected 2 parameters to `dict.get`".to_string(),
+            backtrace,
+        ));
     }
-    let key = match params[0].string(backtrace.clone(), Some(&node)) {
-        Ok(s) => s,
-        Err(e) => return Err(e)
-    };
+    let key = params[0].string(backtrace.clone(), Some(&node))?;
+    if params[1].kind() != StructureKind::Dict {
+        return Err(EvaluationError::type_mismatch(
+            &node,
+            backtrace,
+            StructureKind::Dict,
+            params[1].kind(),
+        ));
+    }
     let dict = params[1].dict();
     match dict.get(&key) {
         Some(s) => Ok(s.clone()),
-        None => Err(EvaluationError {
-            message: format!("could not find key {} in dict", key),
-            backtrace: backtrace
-        }),
+        None => Err(EvaluationError::RuntimeError(
+            format!("could not find key {} in dict", key),
+            backtrace,
+        )),
     }
 }
 
 fn dict_set(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
     if params.len() != 3 {
-        return Err(EvaluationError {
-            message: "expected 3 parameters to `dict.set`".to_string(),
-            backtrace: backtrace
-        });
+        return Err(EvaluationError::RuntimeError(
+            "expected 3 parameters to `dict.set`".to_string(),
+            backtrace,
+        ));
     }
-    let key = match params[0].string(backtrace, Some(&node)) {
-        Ok(s) => s,
-        Err(e) => return Err(e)
-    };
+    let key = params[0].string(backtrace.clone(), Some(&node))?;
     let value = params[1].clone();
+    if params[2].kind() != StructureKind::Dict {
+        return Err(EvaluationError::type_mismatch(
+            &node,
+            backtrace,
+            StructureKind::Dict,
+            params[2].kind(),
+        ));
+    }
     let mut dict = params[2].dict().clone();
     dict.insert(key, value);
     Ok(Structure::Dict(dict))
@@ -289,21 +417,21 @@ fn dict_set(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> Eval
 
 fn string(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
     if params.is_empty() {
-        return Err(EvaluationError {
-            message: "not enough parameters to `string`".to_string(),
-            backtrace: backtrace
-        });
+        return Err(EvaluationError::RuntimeError(
+            "not enough parameters to `string`".to_string(),
+            backtrace,
+        ));
     }
     if params.len() > 1 {
-        return Err(EvaluationError {
-            message: "too many parameters to `string`".to_string(),
-            backtrace: backtrace
-        });
+        return Err(EvaluationError::RuntimeError(
+            "too many parameters to `string`".to_string(),
+            backtrace,
+        ));
     }
     let param = params[0].clone();
     match param.string(backtrace, Some(&node)) {
         Ok(s) => Ok(Structure::from_string(&s)),
-        Err(e) => Err(e)
+        Err(e) => Err(e),
     }
 }
 
@@ -317,22 +445,22 @@ fn print(_node: ASTNode, _backtrace: Backtrace, params: Vec<Structure>) -> Evalu
 const MAX_READ_COUNT: usize = 1073741824;
 
 fn read_bytes(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
-    let max_count = if params.len() == 0 { MAX_READ_COUNT } else {
-        if params.len() == 1 {
-            params[1].integer() as usize
-        } else {
-            return Err(EvaluationError { message: "too many parameters to `read_bytes`".to_string(),
-            backtrace: backtrace
-         })
-        }
+    let max_count = if params.is_empty() {
+        MAX_READ_COUNT
+    } else if params.len() == 1 {
+        params[0].integer() as usize
+    } else {
+        return Err(EvaluationError::RuntimeError(
+            "too many parameters to `read_bytes`".to_string(),
+            backtrace,
+        ));
     };
     let mut bytes: Vec<Structure> = Vec::new();
     for byte in stdin().bytes().take(max_count) {
+        // use match structure with explicit error handling so we can preserve the backtrace
         match byte {
             Ok(b) => bytes.push(Structure::Byte(b)),
-            Err(e) => return Err(EvaluationError { message: format!("{}", e),
-            backtrace: backtrace
-         })
+            Err(e) => return Err(EvaluationError::RuntimeError(format!("{}", e), backtrace)),
         }
     }
     let ret = list_impl(bytes, 0);
@@ -340,18 +468,18 @@ fn read_bytes(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> E
 }
 
 fn read_line(_node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult {
-    if params.len() != 0 {
-        return Err(EvaluationError { message: "too many parameters to `read_line`".to_string(),
-            backtrace: backtrace,
-    });
+    if !params.is_empty() {
+        return Err(EvaluationError::RuntimeError(
+            "too many parameters to `read_line`".to_string(),
+            backtrace,
+        ));
     }
     let mut value = String::new();
     let result = stdin().read_line(&mut value);
+    // use match structure with explicit error handling so we can preserve the backtrace
     match result {
         Ok(_) => (),
-        Err(e) => return Err(EvaluationError { message: format!("{}", e),
-            backtrace: backtrace,
-     })
+        Err(e) => return Err(EvaluationError::RuntimeError(format!("{}", e), backtrace)),
     }
     Ok(Structure::from_string(&value))
 }

@@ -6,19 +6,16 @@ mod parser;
 mod stdlib;
 mod structure;
 
-use crate::structure::Empty;
 use std::env;
 use std::fs;
 use std::io;
-use std::io::Read;
-use std::io::Write;
 use std::io::stdin;
 use std::io::stdout;
+use std::io::Read;
+use std::io::Write;
 
 use errors::EvaluationError;
 use evaluator::Evaluator;
-
-use crate::structure::Backtrace;
 
 fn main() -> Result<(), EvaluationError> {
     let count = env::args().count();
@@ -45,23 +42,16 @@ fn main() -> Result<(), EvaluationError> {
         let mut evaluator = Evaluator::new();
         loop {
             print!("(simplex)> ");
-            match stdout().flush() {
-                Ok(_) => (),
-                Err(e) => return Err(EvaluationError { message: format!("{}", e), backtrace: Backtrace::empty() })
-            }
+            stdout().flush()?;
             let mut input = String::new();
-            match stdin().read_line(&mut input) {
-                Ok(count) => {
-                    if count == 0 {
-                        eof = true;
-                    }
-                },
-                Err(e) => return Err(EvaluationError { message: format!("{}", e), backtrace: Backtrace::empty() })
+            let count = stdin().read_line(&mut input)?;
+            if count == 0 {
+                eof = true;
             }
             let result = evaluator.eval(input);
             match result {
                 Ok(value) => println!("{}", value),
-                Err(e) => return Err(e)
+                Err(e) => println!("{}", e),
             }
             if eof {
                 break;
@@ -71,18 +61,9 @@ fn main() -> Result<(), EvaluationError> {
     } else {
         // Read a single expression from stdin
         let mut input = String::new();
-        let result = io::stdin().read_to_string(&mut input);
-        if let Err(e) = result {
-            return Err(EvaluationError {
-                message: e.to_string(),
-                backtrace: Backtrace::empty()
-            });
-        }
-        let evaluation_result = evaluator.eval(input);
-        match evaluation_result {
-            Ok(value) => println!("{}", value),
-            Err(e) => return Err(e),
-        }
+        let _count = io::stdin().read_to_string(&mut input)?;
+        let evaluation_result = evaluator.eval(input)?;
+        println!("{}", evaluation_result);
         Ok(())
     }
 }
