@@ -1,17 +1,17 @@
-use wasm_bindgen::JsCast;
 use simplex::evaluator::Evaluator;
+use wasm_bindgen::JsCast;
+use web_sys::HtmlTextAreaElement;
 use yew::prelude::*;
-use web_sys::{HtmlTextAreaElement};
 
 pub enum Msg {
     SetInput(String),
-    Submit
+    Submit,
 }
 
 pub struct App {
     input: String,
     output: String,
-    evaluator: Evaluator
+    evaluator: Evaluator,
 }
 
 impl Component for App {
@@ -19,7 +19,11 @@ impl Component for App {
     type Properties = ();
 
     fn create(_ctx: &Context<Self>) -> Self {
-        Self { input: "".to_string(), output: "".to_string(), evaluator: Evaluator::new() }
+        Self {
+            input: "".to_string(),
+            output: "".to_string(),
+            evaluator: Evaluator::new(),
+        }
     }
 
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -27,26 +31,26 @@ impl Component for App {
             Msg::SetInput(s) => {
                 self.input = s;
                 true
-            },
+            }
             Msg::Submit => {
                 match self.evaluator.eval(&self.input) {
                     Ok(s) => {
                         self.output = s.to_string();
-                    },
+                    }
                     Err(e) => {
                         self.output = format!("{:#?}", e);
                     }
                 }
                 true
-            },
+            }
         }
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
             <>
-                <h1>{ "Simplex Playground" }</h1>
-                <div>
+                <div class="content-area">
+                    <h1 class="title">{ "Simplex Playground" }</h1>
                     <textarea id="input" value={self.input.clone()} oninput={ctx.link().callback(|e: InputEvent| {
                         let target = e.target().unwrap().dyn_into::<HtmlTextAreaElement>();
                         let value = match target {
