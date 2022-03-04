@@ -6,15 +6,6 @@ pub struct ASTInput {
 }
 
 impl ASTInput {
-    pub fn from_str<S: AsRef<str>>(input: S) -> ASTInput {
-        // println!("DEBUG: creating ASTInput from {}", input);
-        ASTInput {
-            current: input.as_ref().to_string(),
-            line: 1,
-            col: 1,
-        }
-    }
-
     pub fn advance(&mut self, by: usize) {
         assert!(self.size() >= by);
         for _ in 0..by {
@@ -33,7 +24,7 @@ impl ASTInput {
         &self.current
     }
 
-    pub fn next(&mut self) -> char {
+    pub fn next_char(&mut self) -> char {
         let ret = self.peek();
         self.advance(1);
         ret
@@ -53,5 +44,35 @@ impl ASTInput {
 
     pub fn col(&self) -> i64 {
         self.col
+    }
+}
+
+impl From<String> for ASTInput {
+    fn from(s: String) -> Self {
+        ASTInput {
+            current: s,
+            line: 1,
+            col: 1,
+        }
+    }
+}
+
+impl From<&String> for ASTInput {
+    fn from(s: &String) -> Self {
+        ASTInput {
+            current: s.clone(),
+            line: 1,
+            col: 1,
+        }
+    }
+}
+
+impl From<&str> for ASTInput {
+    fn from(s: &str) -> Self {
+        ASTInput {
+            current: s.to_string(),
+            line: 1,
+            col: 1,
+        }
     }
 }

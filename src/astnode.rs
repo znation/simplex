@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use crate::astinput::ASTInput;
-use crate::errors::ParseError;
+use crate::errors::EvaluationError;
 
 #[derive(Clone, Debug, PartialEq)]
 enum ASTValue {
@@ -38,20 +38,27 @@ impl ASTNode {
         }
     }
 
-    pub fn parse_program(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
+    pub fn parse_program(input: &mut ASTInput) -> Result<ASTNode, EvaluationError> {
         let kind = NodeKind::Program;
         let line = input.line();
         let col = input.col();
-        let mut children = Vec::new();
-        match ASTNode::parse_expression(input) {
-            Ok(v) => children.push(v),
-            Err(e) => return Err(e),
+
+        if input.size() == 0 {
+            // for ergonomics, interpret empty program string as ()
+            return Ok(ASTNode {
+                kind: NodeKind::Identifier,
+                value: ASTValue::String("()".to_string()),
+                line: 0,
+                col: 0,
+            });
         }
+
+        let mut children = Vec::new();
+        let parsed_expression = ASTNode::parse_expression(input)?;
+        children.push(parsed_expression);
         if input.size() > 0 {
-            match ASTNode::parse_program(input) {
-                Ok(v) => children.push(v),
-                Err(e) => return Err(e),
-            }
+            let remaining_program = ASTNode::parse_program(input)?;
+            children.push(remaining_program);
         }
         Ok(ASTNode {
             kind,
@@ -61,47 +68,45 @@ impl ASTNode {
         })
     }
 
-    pub fn parse_expression(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
+    pub fn parse_expression(input: &mut ASTInput) -> Result<ASTNode, EvaluationError> {
         let kind = NodeKind::Expression;
 
-        match ASTNode::parse_optional_whitespace(input) {
-            Ok(_) => (),
-            Err(e) => return Err(e),
-        }
-
-        if input.size() == 0 {
-            // for ergonomics, interpret empty string as ()
-            return Ok(ASTNode {
-                kind: NodeKind::Identifier,
-                value: ASTValue::String("()".to_string()),
-                line: 0,
-                col: 0
-            })
-        }
+        ASTNode::parse_optional_whitespace(input)?;
 
         let next = input.peek();
         let ret = if next == '(' {
             let mut children = Vec::new();
-            match ASTNode::expect(kind, input, "(") {
-                Ok(_) => (),
-                Err(e) => return Err(e),
+
+            // all expressions start with an open paren
+            ASTNode::expect(kind, input, "(")?;
+
+            // special case: () should return the nil identifier
+            if input.peek() == ')' {
+                input.advance(1);
+                return Ok(ASTNode {
+                    kind: NodeKind::Identifier,
+                    value: ASTValue::String("nil".to_string()),
+                    line: input.line(),
+                    col: input.col(),
+                });
             }
-            match ASTNode::parse_expression(input) {
-                Ok(v) => children.push(v),
-                Err(e) => return Err(e),
-            }
-            match ASTNode::parse_optional_parameter_list(input) {
-                Ok(v) => children.push(v),
-                Err(e) => return Err(e),
-            }
-            match ASTNode::parse_optional_whitespace(input) {
-                Ok(_) => (),
-                Err(e) => return Err(e),
-            }
-            match ASTNode::expect(kind, input, ")") {
-                Ok(_) => (),
-                Err(e) => return Err(e),
-            }
+
+            // all expressions are function invocations with (optional) parameters.
+            // the function is itself an expression, so this definition is recursive,
+            // as is this function call.
+            let function_expression = ASTNode::parse_expression(input)?;
+            children.push(function_expression);
+
+            // parse 0 or more parameters
+            let optional_parameters = ASTNode::parse_optional_parameter_list(input)?;
+            children.push(optional_parameters);
+
+            // skip over any remaining whitespace before a close paren
+            ASTNode::parse_optional_whitespace(input)?;
+
+            // finally, match the close paren
+            ASTNode::expect(kind, input, ")")?;
+
             Ok(ASTNode {
                 kind,
                 value: ASTValue::Children(children),
@@ -113,13 +118,10 @@ impl ASTNode {
         } else {
             ASTNode::parse_identifier(input)
         };
-        match ASTNode::parse_optional_whitespace(input) {
-            Ok(_) => (),
-            Err(e) => return Err(e),
-        }
+        ASTNode::parse_optional_whitespace(input)?;
         ret
     }
-    pub fn parse_optional_parameter_list(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
+    pub fn parse_optional_parameter_list(input: &mut ASTInput) -> Result<ASTNode, EvaluationError> {
         let kind = NodeKind::OptionalParameterList;
         let value = if input.peek() != ')' {
             let mut parameter_list = ASTNode {
@@ -128,10 +130,7 @@ impl ASTNode {
                 line: input.line(),
                 col: input.col(),
             };
-            match parameter_list.parse_parameter_list(input) {
-                Ok(_) => (),
-                Err(e) => return Err(e),
-            }
+            parameter_list.parse_parameter_list(input)?;
             vec![parameter_list]
         } else {
             Vec::new()
@@ -143,24 +142,19 @@ impl ASTNode {
             col: input.col(),
         })
     }
-    pub fn parse_parameter_list(&mut self, input: &mut ASTInput) -> Result<(), ParseError> {
+    pub fn parse_parameter_list(&mut self, input: &mut ASTInput) -> Result<(), EvaluationError> {
         let mut new_children = Vec::new();
-        match ASTNode::parse_expression(input) {
-            Ok(v) => new_children.push(v),
-            Err(e) => return Err(e),
-        }
+        let expr = ASTNode::parse_expression(input)?;
+        new_children.push(expr);
         match &mut self.value {
             ASTValue::Children(children) => children.extend(new_children),
             _ => panic!(),
         }
 
-        match ASTNode::parse_optional_whitespace(input) {
-            Ok(_) => (),
-            Err(e) => return Err(e),
-        }
+        ASTNode::parse_optional_whitespace(input)?;
 
         if input.size() == 0 {
-            return Err(ParseError::from(
+            return Err(EvaluationError::parse_error(
                 NodeKind::ParameterList,
                 "end of expression ')'",
                 "EOF",
@@ -175,12 +169,12 @@ impl ASTNode {
         // more parameters left to parse
         self.parse_parameter_list(input)
     }
-    pub fn parse_literal(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
+    pub fn parse_literal(input: &mut ASTInput) -> Result<ASTNode, EvaluationError> {
         let kind = NodeKind::Literal;
         let line = input.line();
         let col = input.col();
         if input.size() == 0 {
-            return Err(ParseError::from(
+            return Err(EvaluationError::parse_error(
                 kind,
                 "any valid literal",
                 "EOF",
@@ -193,11 +187,8 @@ impl ASTNode {
             ASTNode::parse_string(input)
         } else {
             ASTNode::parse_number(input)
-        };
-        let value = match result {
-            Err(e) => return Err(e),
-            _ => vec![result.unwrap()],
-        };
+        }?;
+        let value = vec![result];
         Ok(ASTNode {
             kind,
             value: ASTValue::Children(value),
@@ -205,7 +196,7 @@ impl ASTNode {
             col,
         })
     }
-    pub fn parse_number(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
+    pub fn parse_number(input: &mut ASTInput) -> Result<ASTNode, EvaluationError> {
         let mut kind = NodeKind::Integer;
 
         // read digits until whitespace or decimal
@@ -223,7 +214,7 @@ impl ASTNode {
                     break;
                 }
                 if !next.is_digit(10) {
-                    return Err(ParseError::from(
+                    return Err(EvaluationError::parse_error(
                         kind,
                         "digits 0 through 9",
                         next.to_string(),
@@ -233,7 +224,7 @@ impl ASTNode {
                 }
                 ss.push(next);
             }
-            input.next();
+            input.next_char();
         }
 
         // broke out early or, hit EOF?
@@ -243,6 +234,7 @@ impl ASTNode {
         let col = input.col();
         if is_float {
             kind = NodeKind::FloatingPoint;
+            // keep match structure to forward line/col to error message
             match result.parse::<f64>() {
                 Ok(value) => Ok(ASTNode {
                     kind,
@@ -250,10 +242,17 @@ impl ASTNode {
                     line,
                     col,
                 }),
-                Err(_e) => panic!(),
+                Err(_) => Err(EvaluationError::parse_error(
+                    kind,
+                    "a valid floating point value",
+                    result,
+                    line,
+                    col,
+                )),
             }
         } else {
             kind = NodeKind::Integer;
+            // keep match structure to forward line/col to error message
             match result.parse::<i64>() {
                 Ok(value) => Ok(ASTNode {
                     kind,
@@ -261,11 +260,17 @@ impl ASTNode {
                     line,
                     col,
                 }),
-                Err(_e) => panic!(),
+                Err(_) => Err(EvaluationError::parse_error(
+                    kind,
+                    "a valid integer value",
+                    result,
+                    line,
+                    col,
+                )),
             }
         }
     }
-    pub fn parse_optional_whitespace(input: &mut ASTInput) -> Result<(), ParseError> {
+    pub fn parse_optional_whitespace(input: &mut ASTInput) -> Result<(), EvaluationError> {
         if input.size() == 0 {
             return Ok(());
         }
@@ -274,14 +279,14 @@ impl ASTNode {
         }
         ASTNode::parse_whitespace(input)
     }
-    pub fn parse_whitespace(input: &mut ASTInput) -> Result<(), ParseError> {
+    pub fn parse_whitespace(input: &mut ASTInput) -> Result<(), EvaluationError> {
         let mut found_whitespace = false;
         while input.size() != 0 {
             let next = input.peek();
             if is_whitespace(next) {
                 found_whitespace = true;
             } else if !found_whitespace {
-                return Err(ParseError::from(
+                return Err(EvaluationError::parse_error(
                     NodeKind::Whitespace,
                     "Any of: ' ', \\r, \\n, \\t",
                     next.to_string(),
@@ -291,16 +296,16 @@ impl ASTNode {
             } else {
                 break;
             }
-            input.next();
+            input.next_char();
         }
         Ok(())
     }
-    pub fn parse_identifier(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
+    pub fn parse_identifier(input: &mut ASTInput) -> Result<ASTNode, EvaluationError> {
         let kind = NodeKind::Identifier;
         let line = input.line();
         let col = input.col();
         if input.size() == 0 {
-            return Err(ParseError::from(
+            return Err(EvaluationError::parse_error(
                 kind,
                 "any valid identifier",
                 "EOF",
@@ -310,7 +315,7 @@ impl ASTNode {
         }
         let mut next = input.peek();
         if next == '\'' {
-            return Err(ParseError::from(
+            return Err(EvaluationError::parse_error(
                 kind,
                 "non-whitespace character other than '\\'', '(' and ')'",
                 next.to_string(),
@@ -325,7 +330,7 @@ impl ASTNode {
                 break;
             }
             if next == '(' {
-                return Err(ParseError::from(
+                return Err(EvaluationError::parse_error(
                     kind,
                     "non-whitespace character other than '('",
                     next.to_string(),
@@ -334,32 +339,33 @@ impl ASTNode {
                 ));
             }
             ss.push(next);
-            input.next();
+            input.next_char();
         }
         if ss.chars().count() == 0 {
-            // this feels like a hack -- assume empty identifier is pointing to () (Nil)
-            // otherwise, we fail to parse () expressions
-            ss = "nil".to_string();
+            Err(EvaluationError::parse_error(
+                kind,
+                "non-whitespace character other than '\\'', '(' and ')'",
+                input.get(),
+                line,
+                col,
+            ))
+        } else {
+            Ok(ASTNode {
+                kind,
+                value: ASTValue::String(ss),
+                line,
+                col,
+            })
         }
-        assert!(ss.chars().count() != 0);
-        Ok(ASTNode {
-            kind,
-            value: ASTValue::String(ss),
-            line,
-            col,
-        })
     }
 
-    pub fn parse_string(input: &mut ASTInput) -> Result<ASTNode, ParseError> {
+    pub fn parse_string(input: &mut ASTInput) -> Result<ASTNode, EvaluationError> {
         let kind = NodeKind::String;
         let line = input.line();
         let col = input.col();
         let mut ss = String::new();
         let mut found_end_of_string = false;
-        match ASTNode::expect(kind, input, "'") {
-            Ok(_) => (),
-            Err(e) => return Err(e),
-        }
+        ASTNode::expect(kind, input, "'")?;
         while input.size() != 0 {
             let mut next = input.peek();
             if next == '\'' {
@@ -369,7 +375,7 @@ impl ASTNode {
             if next == '\\' {
                 // escape char
                 if input.size() < 2 {
-                    return Err(ParseError::from(
+                    return Err(EvaluationError::parse_error(
                         kind,
                         "any character followed by escape sequence (\\)",
                         "EOF",
@@ -377,15 +383,15 @@ impl ASTNode {
                         input.col(),
                     ));
                 }
-                ss.push(input.next());
+                ss.push(input.next_char());
                 next = input.peek();
             }
 
             ss.push(next);
-            input.next();
+            input.next_char();
         }
         if !found_end_of_string {
-            return Err(ParseError::from(
+            return Err(EvaluationError::parse_error(
                 kind,
                 "end of string marker (')",
                 "EOF",
@@ -394,10 +400,7 @@ impl ASTNode {
             ));
         }
 
-        match ASTNode::expect(kind, input, "'") {
-            Ok(_) => (),
-            Err(e) => return Err(e),
-        }
+        ASTNode::expect(kind, input, "'")?;
         Ok(ASTNode {
             kind,
             value: ASTValue::String(ss),
@@ -450,12 +453,12 @@ impl ASTNode {
         kind: NodeKind,
         input: &mut ASTInput,
         token: S,
-    ) -> Result<(), ParseError> {
+    ) -> Result<(), EvaluationError> {
         let token_str = token.as_ref();
         let token_size = token_str.chars().count();
         if token_size > input.size() {
             let remaining = input.get();
-            return Err(ParseError::from(
+            return Err(EvaluationError::parse_error(
                 kind,
                 token,
                 remaining,
@@ -465,7 +468,7 @@ impl ASTNode {
         }
         let should_be_token = &input.get()[0..token_size];
         if should_be_token != token_str {
-            return Err(ParseError::from(
+            return Err(EvaluationError::parse_error(
                 kind,
                 token,
                 should_be_token,
@@ -598,7 +601,7 @@ mod tests {
     #[test]
     fn test_parse_program() {
         for str in programs() {
-            let mut input = ASTInput::from_str(&str);
+            let mut input = ASTInput::from(&str);
             let result = ASTNode::parse_program(&mut input);
             match result {
                 Ok(node) => assert_eq!(node.kind(), NodeKind::Program),
@@ -610,7 +613,7 @@ mod tests {
     #[test]
     fn test_parse_expression() {
         for str in expressions() {
-            let mut input = ASTInput::from_str(&str);
+            let mut input = ASTInput::from(&str);
             let result = ASTNode::parse_expression(&mut input);
             match result {
                 // resulting NodeKind could be any of:
@@ -631,7 +634,7 @@ mod tests {
     #[test]
     fn test_parse_identifier() {
         for str in identifiers() {
-            let mut input = ASTInput::from_str(&str);
+            let mut input = ASTInput::from(&str);
             let result = ASTNode::parse_identifier(&mut input);
             match result {
                 Ok(node) => assert_eq!(node.kind(), NodeKind::Identifier),
@@ -643,7 +646,7 @@ mod tests {
     #[test]
     fn test_parse_literal() {
         for str in literals() {
-            let mut input = ASTInput::from_str(&str);
+            let mut input = ASTInput::from(&str);
             let result = ASTNode::parse_literal(&mut input);
             match result {
                 Ok(node) => assert_eq!(node.kind(), NodeKind::Literal),
@@ -655,7 +658,7 @@ mod tests {
     #[test]
     fn test_parse_string() {
         for str in strings() {
-            let mut input = ASTInput::from_str(&str);
+            let mut input = ASTInput::from(&str);
             let result = ASTNode::parse_string(&mut input);
             match result {
                 Ok(node) => assert_eq!(node.kind(), NodeKind::String),
@@ -667,7 +670,7 @@ mod tests {
     #[test]
     fn test_parse_number() {
         for str in floats() {
-            let mut input = ASTInput::from_str(&str);
+            let mut input = ASTInput::from(&str);
             let result = ASTNode::parse_number(&mut input);
             match result {
                 Ok(node) => assert_eq!(node.kind(), NodeKind::FloatingPoint),
@@ -675,7 +678,7 @@ mod tests {
             }
         }
         for str in integers() {
-            let mut input = ASTInput::from_str(&str);
+            let mut input = ASTInput::from(&str);
             let result = ASTNode::parse_number(&mut input);
             match result {
                 Ok(node) => assert_eq!(node.kind(), NodeKind::Integer),

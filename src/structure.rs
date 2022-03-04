@@ -45,7 +45,9 @@ pub enum FunctionBody {
             params: Vec<Structure>,
         ) -> EvaluationResult,
     ),
-    Native(fn(node: ASTNode, outer_backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult),
+    Native(
+        fn(node: ASTNode, outer_backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult,
+    ),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -56,7 +58,11 @@ pub struct Function {
 
 impl Function {
     pub fn synthetic(
-        function: fn(node: ASTNode, backtrace: Backtrace, params: Vec<Structure>) -> EvaluationResult
+        function: fn(
+            node: ASTNode,
+            backtrace: Backtrace,
+            params: Vec<Structure>,
+        ) -> EvaluationResult,
     ) -> Structure {
         Structure::Function(Function {
             parameter_list: Vec::new(),
@@ -64,7 +70,13 @@ impl Function {
         })
     }
 
-    pub fn call(&self, node: &ASTNode, outer_symbols: &SymbolTable, outer_backtrace: &Backtrace, params: Vec<Structure>) -> EvaluationResult {
+    pub fn call(
+        &self,
+        node: &ASTNode,
+        outer_symbols: &SymbolTable,
+        outer_backtrace: &Backtrace,
+        params: Vec<Structure>,
+    ) -> EvaluationResult {
         match self.function {
             FunctionBody::Lambda(lambda) => lambda(
                 node.clone(),
@@ -97,19 +109,19 @@ impl Structure {
         Structure::Invalid
     }
 
-    pub fn from_string(s: &String) -> Structure {
+    pub fn from_string(s: &str) -> Structure {
         // create cons from string
-        let len = s.len();
+        let len = s.chars().count();
         if len == 0 {
             Structure::Cons(Box::new((Structure::Nil, Structure::Nil)))
         } else {
             let mut chars = s.chars();
             let car = Structure::Char(chars.next().unwrap());
-            let cdr = if len == 1 {
+            let remaining_input = chars.as_str();
+            let cdr = if remaining_input.is_empty() {
                 Structure::Nil
             } else {
-                let recursive_input = s[1..s.len()].to_string();
-                Structure::from_string(&recursive_input)
+                Structure::from_string(remaining_input)
             };
             Structure::Cons(Box::new((car, cdr)))
         }
@@ -145,10 +157,19 @@ impl Structure {
         }
     }
 
+    // allow implicit conversion to bool from any type
     pub fn boolean(&self) -> bool {
         match self {
             Structure::Boolean(b) => *b,
-            _ => panic!(),
+            Structure::Byte(b) => *b != 0,
+            Structure::Char(c) => *c != '\0',
+            Structure::Cons(c) => c.0.kind() != StructureKind::Nil,
+            Structure::Dict(d) => !d.is_empty(),
+            Structure::FloatingPoint(f) => *f != 0.0,
+            Structure::Function(_) => true,
+            Structure::Integer(i) => *i != 0,
+            Structure::Invalid => panic!(),
+            Structure::Nil => false,
         }
     }
 
@@ -167,34 +188,44 @@ impl Structure {
     }
 
     /// Turns a Simplex list of Chars into a Rust String
-    pub fn string(&self, backtrace: Backtrace, node: Option<&ASTNode>) -> Result<String, EvaluationError> {
+    pub fn string(
+        &self,
+        backtrace: Backtrace,
+        node: Option<&ASTNode>,
+    ) -> Result<String, EvaluationError> {
         let invalid_node = ASTNode::invalid();
         let node = node.unwrap_or(&invalid_node);
         let cons = match self {
             Structure::Cons(b) => &*b,
-            _ => panic!(),
+            _ => {
+                return Err(EvaluationError::type_mismatch(
+                    node,
+                    backtrace,
+                    StructureKind::Cons,
+                    self.kind(),
+                ))
+            }
         };
         let car = &cons.0;
         let cdr = &cons.1;
         let ret = if car.kind() == StructureKind::Nil {
             assert_eq!(cdr.kind(), StructureKind::Nil);
             "".to_string()
-        } else {
-            if car.kind() == StructureKind::Char {
-                assert_eq!(car.kind(), StructureKind::Char);
-                if cdr.kind() == StructureKind::Nil {
-                    car.char().to_string()
-                } else {
-                    match cdr.string(backtrace, Some(node)) {
-                        Ok(s) => car.char().to_string() + &s,
-                        Err(e) => return Err(e)
-                    }
-                }
+        } else if car.kind() == StructureKind::Char {
+            assert_eq!(car.kind(), StructureKind::Char);
+            if cdr.kind() == StructureKind::Nil {
+                car.char().to_string()
             } else {
-                return Err(EvaluationError::type_mismatch(&node,
-                    backtrace,
-                    StructureKind::Char, car.kind()));
+                let s = cdr.string(backtrace, Some(node))?;
+                car.char().to_string() + &s
             }
+        } else {
+            return Err(EvaluationError::type_mismatch(
+                node,
+                backtrace,
+                StructureKind::Char,
+                car.kind(),
+            ));
         };
         Ok(ret)
     }
@@ -232,9 +263,9 @@ impl fmt::Display for Structure {
                 // otherwise, write it as raw cons cells
                 match self.string(Backtrace::empty(), None) {
                     Ok(s) => write!(f, "{}", s),
-                    Err(_) => write!(f, "(cons {} {})", c.0, c.1)
+                    Err(_) => write!(f, "(cons {} {})", c.0, c.1),
                 }
-            },
+            }
             Structure::Dict(d) => write!(f, "{}", fmt_dict(d)),
             Structure::FloatingPoint(v) => write!(f, "{}", v),
             Structure::Function(function) => match function.function {
@@ -295,7 +326,7 @@ mod tests {
             assert_eq!(s.kind(), StructureKind::Cons);
             match s.string(Backtrace::empty(), None) {
                 Ok(found) => assert_eq!(found, string),
-                Err(_) => assert!(false)
+                Err(_) => assert!(false),
             }
         }
     }
